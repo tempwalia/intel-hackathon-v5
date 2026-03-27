@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Idea Intake Form</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			padding: 20px;
+		}
+		.container {
+			max-width: 900px;
+			margin: 0 auto;
+			background: white;
+			border-radius: 12px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			padding: 40px;
+		}
+		h1 {
+			color: #333;
+			margin-bottom: 10px;
+			font-size: 28px;
+		}
+		.subtitle {
+			color: #666;
+			margin-bottom: 30px;
+			font-size: 16px;
+		}
+		.section {
+			margin-bottom: 40px;
+		}
+		.section h2 {
+			color: #667eea;
+			font-size: 18px;
+			margin-bottom: 20px;
+			border-bottom: 2px solid #667eea;
+			padding-bottom: 10px;
+		}
+		.form-group {
+			margin-bottom: 16px;
+		}
+		label {
+			display: block;
+			margin-bottom: 8px;
+			color: #333;
+			font-weight: 500;
+			font-size: 14px;
+		}
+		input[type="text"],
+		input[type="email"],
+		input[type="number"],
+		textarea,
+		select {
+			width: 100%;
+			padding: 10px 12px;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			font-size: 14px;
+			font-family: inherit;
+			transition: border-color 0.2s;
+		}
+		input[type="text"]:focus,
+		input[type="email"]:focus,
+		input[type="number"]:focus,
+		textarea:focus,
+		select:focus {
+			outline: none;
+			border-color: #667eea;
+			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		}
+		textarea {
+			resize: vertical;
+			min-height: 100px;
+		}
+		/* Modal textarea override */
+		.modal-content textarea {
+			min-height: 80px;
+		}
+		.form-row {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+		}
+		@media (max-width: 600px) {
+			.form-row {
+				grid-template-columns: 1fr;
+			}
+		}
+		.checkbox-group {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+			gap: 12px;
+			margin-top: 10px;
+		}
+		.checkbox-item {
+			display: flex;
+			align-items: center;
+		}
+		input[type="checkbox"] {
+			width: 18px;
+			height: 18px;
+			margin-right: 8px;
+			cursor: pointer;
+		}
+		.checkbox-item label {
+			margin: 0;
+			cursor: pointer;
+			font-weight: normal;
+		}
+		.button-group {
+			display: flex;
+			gap: 10px;
+			margin-top: 30px;
+		}
+		button {
+			padding: 12px 24px;
+			border: none;
+			border-radius: 6px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		#submitBtn {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			flex: 1;
+		}
+		#submitBtn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+		}
+		#submitBtn:active {
+			transform: translateY(0);
+		}
+		#resetBtn {
+			background: #f0f0f0;
+			color: #333;
+			padding: 12px 24px;
+		}
+		#resetBtn:hover {
+			background: #e0e0e0;
+		}
+		.message {
+			padding: 16px 12px;
+			border-radius: 6px;
+			margin-bottom: 20px;
+			display: none;
+		}
+		.message.success {
+			background: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+			display: block;
+		}
+		.message.error {
+			background: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+			display: block;
+		}
+		.summary {
+			background: #f8f9fa;
+			padding: 20px;
+			border-radius: 6px;
+			margin-top: 20px;
+			display: none;
+		}
+		.summary h3 {
+			color: #333;
+			margin-bottom: 12px;
+		}
+		.summary pre {
+			background: white;
+			padding: 12px;
+			border-radius: 6px;
+			overflow-x: auto;
+			font-size: 12px;
+			line-height: 1.4;
+			border: 1px solid #ddd;
+		}
+		.required {
+			color: #e74c3c;
+		}
+		/* Modal Popup Styles */
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 1000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.5);
+			animation: fadeIn 0.3s;
+		}
+		@keyframes fadeIn {
+			from { opacity: 0; }
+			to { opacity: 1; }
+		}
+		.modal-content {
+			background-color: white;
+			margin: 5% auto;
+			padding: 30px;
+			border-radius: 12px;
+			width: 80%;
+			max-width: 600px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			animation: slideIn 0.3s;
+		}
+		@keyframes slideIn {
+			from {
+				transform: translateY(-50px);
+				opacity: 0;
+			}
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+			border-bottom: 2px solid #667eea;
+			padding-bottom: 15px;
+		}
+		.modal-header h2 {
+			margin: 0;
+			color: #333;
+			font-size: 24px;
+		}
+		.close-btn {
+			background: none;
+			border: none;
+			font-size: 28px;
+			cursor: pointer;
+			color: #999;
+			padding: 0;
+			width: 30px;
+			height: 30px;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+		.close-btn:hover {
+			color: #333;
+		}
+		.similarity-badge {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 12px 16px;
+			border-radius: 6px;
+			font-weight: 600;
+			font-size: 18px;
+			text-align: center;
+			margin-bottom: 20px;
+		}
+		.poc-details {
+			background: #f8f9fa;
+			padding: 20px;
+			border-radius: 8px;
+			margin: 15px 0;
+		}
+		.poc-detail-row {
+			margin-bottom: 12px;
+		}
+		.poc-detail-row strong {
+			color: #667eea;
+			display: block;
+			margin-bottom: 4px;
+			font-size: 14px;
+		}
+		.poc-detail-row span {
+			color: #333;
+			display: block;
+			font-size: 14px;
+			word-break: break-word;
+		}
+		.modal-actions {
+			display: flex;
+			gap: 10px;
+			margin-top: 25px;
+		}
+		.modal-actions button {
+			flex: 1;
+			padding: 12px 16px;
+			border: none;
+			border-radius: 6px;
+			font-size: 14px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.exception-btn {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+		.exception-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+		}
+		.modify-btn {
+			background: #ffc107;
+			color: #333;
+		}
+		.modify-btn:hover {
+			background: #ffb300;
+			transform: translateY(-2px);
+		}
+		.cancel-btn {
+			background: #f0f0f0;
+			color: #333;
+		}
+		.cancel-btn:hover {
+			background: #e0e0e0;
+		}
+		/* New POC Modal Styles */
+		.new-poc-badge {
+			background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+			color: white;
+			padding: 20px;
+			border-radius: 8px;
+			font-weight: 600;
+			font-size: 18px;
+			text-align: center;
+			margin-bottom: 20px;
+		}
+		.new-poc-message {
+			background: #f0fdf4;
+			padding: 20px;
+			border-radius: 8px;
+			border-left: 4px solid #10b981;
+			margin-bottom: 20px;
+		}
+		.new-poc-message p {
+			margin: 12px 0;
+			color: #333;
+			line-height: 1.6;
+			font-size: 14px;
+		}
+		.new-poc-message p:first-child {
+			margin-top: 0;
+		}
+		.new-poc-message p:last-child {
+			margin-bottom: 0;
+		}
+		.new-poc-message strong {
+			color: #10b981;
+		}
+		.accept-btn {
+			background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+			color: white;
+			flex: 1;
+		}
+		.accept-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+		}
+		/* Header with logout styles */
+		.form-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 30px;
+			padding-bottom: 20px;
+			border-bottom: 1px solid #eee;
+		}
+		.form-header h1 {
+			margin: 0;
+			flex: 1;
+		}
+		.logout-btn {
+			padding: 8px 16px;
+			background: #f0f0f0;
+			color: #333;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			font-size: 14px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.logout-btn:hover {
+			background: #e74c3c;
+			color: white;
+			border-color: #e74c3c;
+		}
+		/* Profile Section Styles */
+		.profile-section {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+		}
+		.profile-info {
+			text-align: right;
+		}
+		.employee-name {
+			color: #333;
+			font-weight: 600;
+			font-size: 14px;
+		}
+		.employee-badge {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			display: inline-block;
+			padding: 4px 10px;
+			border-radius: 20px;
+			font-size: 11px;
+			font-weight: 600;
+		}
+		.profile-avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 600;
+			font-size: 16px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="form-header">
+			<h1>📝 Idea Intake Form</h1>
+			<div class="profile-section">
+				<div class="profile-avatar" id="profileAvatar">👤</div>
+				<div class="profile-info">
+					<div class="employee-name" id="employeeName">Loading...</div>
+					<div class="employee-badge">Employee</div>
+				</div>
+				<button class="logout-btn" onclick="handleLogout()">Logout</button>
+			</div>
+		</div>
+		<p class="subtitle">Use this form to submit a new idea. Fill all sections marked with <span class="required">*</span> and press Submit.
+			<span style="float: right; color: #667eea; font-weight: 600;">
+				<a href="/check-exception-status" style="color: #667eea; text-decoration: none; border-bottom: 2px solid #667eea; padding-bottom: 2px;">Check Exception Status →</a>
+			</span>
+		</p>
+		
+		<div id="message" class="message"></div>
+		
+		<form id="ideaForm">
+			<!-- Section 1 -->
+			<div class="section">
+				<h2>Section 1: Idea Overview</h2>
+				<div class="form-group">
+					<label for="title">Title <span class="required">*</span></label>
+					<input type="text" id="title" name="title" placeholder="e.g., URL Shortener Application">
+				</div>
+				<div class="form-group">
+					<label for="description">Description <span class="required">*</span></label>
+					<textarea id="description" name="description" placeholder="Enter a brief description of your project..."></textarea>
+				</div>
+				<div class="form-group">
+					<label for="problem">Problem <span class="required">*</span></label>
+					<textarea id="problem" name="problem" placeholder="Describe the problem your project solves..."></textarea>
+				</div>
+				<div class="form-group">
+					<label for="outcome">Desired Outcome <span class="required">*</span></label>
+					<textarea id="outcome" name="outcome" placeholder="What will users achieve?"></textarea>
+				</div>
+			</div>
+			
+			<!-- Section 2 -->
+			<div class="section">
+				<h2>Section 2: Technical Inputs</h2>
+				<div class="form-row">
+					<div class="form-group">
+						<label for="language">Language / Primary Tech <span class="required">*</span></label>
+						<input type="text" id="language" name="language" placeholder="e.g., Python">
+					</div>
+					<div class="form-group">
+						<label for="complexity">Complexity <span class="required">*</span></label>
+						<select id="complexity" name="complexity">
+							<option value="">-- Select --</option>
+							<option value="Low">Low</option>
+							<option value="Medium">Medium</option>
+							<option value="High">High</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="approach">Approach / Algorithm <span class="required">*</span></label>
+					<textarea id="approach" name="approach" placeholder="Explain how the solution works..."></textarea>
+				</div>
+				<div class="form-group">
+					<label for="stack">Recommended Stack / Services <span class="required">*</span></label>
+					<textarea id="stack" name="stack" placeholder="List technologies used..."></textarea>
+				</div>
+				<div class="form-group">
+					<label for="boilerplate">
+						<input type="checkbox" id="boilerplate" name="boilerplate_enabled">
+						Enable Boilerplate / Scaffold (optional)
+					</label>
+				</div>
+			</div>
+			
+			<!-- Section 3 -->
+			<div class="section">
+				<h2>Section 3: Resources & Skills</h2>
+				<div class="form-row">
+					<div class="form-group">
+						<label for="devCount">Developer count (estimate) <span class="required">*</span></label>
+						<input type="number" id="devCount" name="dev_count" min="1" max="100" value="1">
+					</div>
+					<div class="form-group">
+						<label for="timeline">Estimated timeline <span class="required">*</span></label>
+						<input type="text" id="timeline" name="timeline" placeholder="e.g., 2–5 days">
+					</div>
+				</div>
+				<div class="form-group">
+					<label>Required skills / roles <span class="required">*</span></label>
+					<div class="checkbox-group">
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="Frontend">
+							<label>Frontend</label>
+						</div>
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="Backend">
+							<label>Backend</label>
+						</div>
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="ML">
+							<label>ML</label>
+						</div>
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="DevOps">
+							<label>DevOps</label>
+						</div>
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="QA">
+							<label>QA</label>
+						</div>
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="Data Engineer">
+							<label>Data Engineer</label>
+						</div>
+						<div class="checkbox-item">
+							<input type="checkbox" name="skills" value="Product">
+							<label>Product</label>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Section 4 -->
+			<div class="section">
+				<h2>Section 4: Approval</h2>
+				<div class="form-group">
+					<label for="manager">Manager / Approver <span class="required">*</span></label>
+					<select id="manager" name="manager" required>
+						<option value="">-- Select a Manager --</option>
+					</select>
+				</div>
+			</div>
+			
+			<!-- Buttons -->
+			<div class="button-group">
+				<button type="submit" id="submitBtn">Submit Idea</button>
+				<button type="reset" id="resetBtn">Clear Form</button>
+			</div>
+		</form>
+		
+		<div id="summary" class="summary">
+			<h3>✅ Submission Summary</h3>
+			<pre id="summaryContent"></pre>
+		</div>
+	</div>
+	
+	<!-- Similar POC Modal Popup -->
+	<div id="similarPocModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>🎯 Similar POC Found!</h2>
+				<button type="button" class="close-btn" onclick="closeSimilarPocModal()">&times;</button>
+			</div>
+			<div class="similarity-badge">
+				<span id="similarityPercentage">--</span>% Similarity Match
+			</div>
+			<div class="poc-details">
+				<div class="poc-detail-row">
+					<strong>ID</strong>
+					<span id="pocId">--</span>
+				</div>
+				<div class="poc-detail-row">
+					<strong>Title</strong>
+					<span id="pocTitle">--</span>
+				</div>
+				<div class="poc-detail-row">
+					<strong>Description</strong>
+					<span id="pocDescription">--</span>
+				</div>
+				<div class="poc-detail-row">
+					<strong>Problem</strong>
+					<span id="pocProblem">--</span>
+				</div>
+				<div class="poc-detail-row">
+					<strong>Approach</strong>
+					<span id="pocApproach">--</span>
+				</div>
+				<div class="poc-detail-row">
+					<strong>Stack</strong>
+					<span id="pocStack">--</span>
+				</div>
+				<div class="poc-detail-row">
+					<strong>Timeline</strong>
+					<span id="pocTimeline">--</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="exceptionNotes">Additional Notes <span class="required">*</span></label>
+				<textarea id="exceptionNotes" placeholder="Explain why you want to proceed despite the similarity..." required></textarea>
+			</div>
+			<div class="modal-actions">
+				<button type="button" class="exception-btn" onclick="submitException()">Request Exception</button>
+				<button type="button" class="modify-btn" onclick="modifyIdea()">Modify Idea</button>
+				<button type="button" class="cancel-btn" onclick="closeSimilarPocModal()">Cancel</button>
+			</div>
+		</div>
+	</div>
+	
+	<!-- New POC Modal Popup -->
+	<div id="newPocModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>✨ New & Unique Idea!</h2>
+				<button type="button" class="close-btn" onclick="closeNewPocModal()">&times;</button>
+			</div>
+			<div class="new-poc-badge">
+				🎉 This is a fresh and innovative idea!
+			</div>
+			<div class="new-poc-message">
+				<p>Great News! Your idea is <strong>completely unique</strong> and doesn't match any existing POCs in our knowledge base.</p>
+				<p>This means your concept is novel and worth exploring further. Your manager will review this new opportunity.</p>
+			</div>
+			<div class="modal-actions">
+				<button type="button" class="accept-btn" onclick="closeNewPocModal()">Accept & Continue</button>
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		// Store current form data and POC data globally for modal actions
+		let currentIdeaData = null;
+		let currentPocData = null;
+		let currentSimilarityScore = null;
+		let currentIdeaId = null;
+		
+		// Load managers on page load
+		async function loadManagers() {
+			try {
+				const response = await fetch('/api/managers');
+				const result = await response.json();
+				
+				if (result.success && result.data) {
+					const managerSelect = document.getElementById('manager');
+					const currentOptions = managerSelect.innerHTML;
+					
+					// Add managers to dropdown
+					result.data.forEach(mgr => {
+						const option = document.createElement('option');
+						option.value = mgr.id;
+						option.textContent = `${mgr.name} (${mgr.id})`;
+						managerSelect.appendChild(option);
+					});
+				}
+			} catch (error) {
+				console.error('Error loading managers:', error);
+			}
+		}
+		
+		// Load employee profile information
+		async function loadEmployeeProfile() {
+			try {
+				const response = await fetch('/api/employee-profile');
+				const result = await response.json();
+				
+				if (result.success && result.data) {
+					const employeeName = result.data.employee_name || 'Employee';
+					const employeeId = result.data.employee_id || '';
+					
+					// Update profile avatar with first letter
+					const firstLetter = employeeName.charAt(0).toUpperCase();
+					document.getElementById('profileAvatar').textContent = firstLetter;
+					
+					// Update employee name
+					document.getElementById('employeeName').textContent = employeeName;
+				} else {
+					console.warn('Could not load employee profile');
+				}
+			} catch (error) {
+				console.error('Error loading employee profile:', error);
+			}
+		}
+		
+		// Handle logout
+		async function handleLogout() {
+			if (confirm('Are you sure you want to logout?')) {
+				try {
+					const response = await fetch('/api/logout', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					});
+					
+					const result = await response.json();
+					
+					if (result.success) {
+						// Redirect to login page
+						window.location.href = '/';
+					} else {
+						alert('Error logging out. Please try again.');
+					}
+				} catch (error) {
+					console.error('Logout error:', error);
+					alert('Error logging out. Please try again.');
+				}
+			}
+		}
+		
+		// Load managers and employee profile when page loads
+		document.addEventListener('DOMContentLoaded', function() {
+			loadManagers();
+			loadEmployeeProfile();
+		});
+		
+		// Function to show similar POC modal
+		function showSimilarPocModal(pocData, similarity, ideaId) {
+			if (!pocData) return;
+			
+			// Store data for later use
+			currentPocData = pocData;
+			currentSimilarityScore = similarity;
+			currentIdeaId = ideaId;
+			
+			// Populate modal with POC data
+			document.getElementById('similarityPercentage').textContent = (similarity * 100).toFixed(1);
+			document.getElementById('pocId').textContent = pocData.id || '--';
+			document.getElementById('pocTitle').textContent = pocData.title || '--';
+			document.getElementById('pocDescription').textContent = pocData.description || '--';
+			document.getElementById('pocProblem').textContent = pocData.problem || '--';
+			document.getElementById('pocApproach').textContent = pocData.approach || '--';
+			document.getElementById('pocStack').textContent = pocData.stack || '--';
+			document.getElementById('pocTimeline').textContent = pocData.timeline || '--';
+			document.getElementById('exceptionNotes').value = '';
+			
+			// Show modal
+			document.getElementById('similarPocModal').style.display = 'block';
+		}
+		
+		// Function to close similar POC modal
+		function closeSimilarPocModal() {
+			document.getElementById('similarPocModal').style.display = 'none';
+		}
+		
+		// Function to show new POC modal (when no similar matches found)
+		function showNewPocModal() {
+			document.getElementById('newPocModal').style.display = 'block';
+		}
+		
+		// Function to close new POC modal
+		function closeNewPocModal() {
+			document.getElementById('newPocModal').style.display = 'none';
+		}
+		
+		// Function to submit exception request
+		async function submitException() {
+			const notes = document.getElementById('exceptionNotes').value.trim();
+			
+			// Validate notes are provided
+			if (!notes) {
+				alert('❌ Please provide notes explaining why you want to proceed with this similar idea.');
+				return;
+			}
+			
+			const manager = currentIdeaData?.manager || '';
+			
+			const exceptionData = {
+				idea_id: currentIdeaId,
+				manager: manager,
+				similar_poc_id: currentPocData.id,
+				similarity_score: currentSimilarityScore,
+				notes: notes
+			};
+			
+			try {
+				const response = await fetch('/api/request-exception', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(exceptionData)
+				});
+				
+				const result = await response.json();
+				
+				if (response.ok) {
+					alert(`✅ Exception request submitted!\nException ID: ${result.exception_id}\nManager will review this request soon.`);
+					closeSimilarPocModal();
+					console.log('Exception saved:', result.data);
+				} else {
+					alert(`❌ Error: ${result.message}`);
+				}
+			} catch (error) {
+				alert('❌ Error submitting exception request. Please try again.');
+				console.error('Error:', error);
+			}
+		}
+		
+		// Function to go back and modify idea
+		function modifyIdea() {
+			closeSimilarPocModal();
+			// Scroll back to form
+			document.getElementById('ideaForm').scrollIntoView({ behavior: 'smooth' });
+		}
+		
+		// DO NOT close modal when clicking outside
+		// Users must use action buttons to proceed (prevents accidental closure)
+		window.onclick = function(event) {
+			// Modal stays open until user clicks a button
+		}
+		
+		document.getElementById('ideaForm').addEventListener('submit', async function(e) {
+			e.preventDefault();
+			
+			const formData = new FormData(this);
+			const data = {
+				title: formData.get('title'),
+				description: formData.get('description'),
+				problem: formData.get('problem'),
+				outcome: formData.get('outcome'),
+				language: formData.get('language'),
+				approach: formData.get('approach'),
+				stack: formData.get('stack'),
+				complexity: formData.get('complexity'),
+				boilerplate_enabled: formData.get('boilerplate_enabled') === 'on',
+				dev_count: formData.get('dev_count'),
+				skills: formData.getAll('skills'),
+				timeline: formData.get('timeline'),
+				manager: formData.get('manager'),
+			};
+			
+			// Store form data for exception workflow
+			currentIdeaData = data;
+			
+			try {
+				const response = await fetch('/api/submit', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(data)
+				});
+				
+				const result = await response.json();
+				const messageDiv = document.getElementById('message');
+				
+				// Debug: Log the response
+				console.log('Response received:', result);
+				console.log('Similar POC:', result.similar_poc);
+				console.log('Similarity Score:', result.similarity_score);
+				
+				if (response.ok) {
+					messageDiv.className = 'message success';
+					messageDiv.textContent = result.message + ` ID: ${result.id}`;
+					
+					document.getElementById('summaryContent').textContent = JSON.stringify(result.data, null, 2);
+					document.getElementById('summary').style.display = 'block';
+					
+					// Show either similar POC modal or new POC modal
+					if (result.similar_poc && result.similarity_score) {
+						console.log('Showing similar POC modal');
+						showSimilarPocModal(result.similar_poc, result.similarity_score, result.id);
+					} else {
+						console.log('No similar POC found - showing new POC modal');
+						showNewPocModal();
+					}
+					
+					// Clear form
+					document.getElementById('ideaForm').reset();
+					
+					// Scroll to summary
+					document.getElementById('summary').scrollIntoView({ behavior: 'smooth' });
+				} else {
+					messageDiv.className = 'message error';
+					messageDiv.textContent = '❌ ' + result.message;
+					document.getElementById('summary').style.display = 'none';
+				}
+			} catch (error) {
+				const messageDiv = document.getElementById('message');
+				messageDiv.className = 'message error';
+				messageDiv.textContent = '❌ Error submitting form. Please try again.';
+				console.error('Error:', error);
+			}
+		});
+	</script>
+</body>
+</html>

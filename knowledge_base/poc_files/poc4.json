@@ -1,0 +1,16 @@
+{
+    "id": "poc_004",
+    "title": "Fraudulent Transaction Detection",
+    "description": "Detect unusual financial transactions in real time.",
+    "problem": "Manual audits miss subtle fraud patterns.",
+    "outcome": "Auto alerts for anomalous transactions.",
+    "language": "Python",
+    "approach": "Use anomaly detection algorithms like Isolation Forest.",
+    "stack": "Python, Sklearn, Kafka, PostgreSQL",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer"],
+    "timeline": "18",
+    "manager": "ram"
+  }

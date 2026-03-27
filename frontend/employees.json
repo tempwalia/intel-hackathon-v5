@@ -1,0 +1,22 @@
+{
+  "employees": [
+    {
+      "id": "himanshu",
+      "password": "password123",
+      "name": "Himanshu More",
+      "role": "Data Engineer"
+    },
+    {
+      "id": "aditi",
+      "password": "password123",
+      "name": "Aditi Kothiyal",
+      "role":"Backend Developer"
+    },
+    {
+      "id": "tikam",
+      "password": "password123",
+      "name": "Tikam Singh",
+      "role": "Frontend Developer"
+    }
+  ]
+}

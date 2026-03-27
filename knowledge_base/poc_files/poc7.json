@@ -1,0 +1,16 @@
+{
+    "id": "poc_007",
+    "title": "Email Intent & Priority Classifier",
+    "description": "AI-based classifier that detects email intent and urgency.",
+    "problem": "Employees spend too much time reading and sorting emails.",
+    "outcome": "Prioritized inbox with category tagging.",
+    "language": "Python",
+    "approach": "Train a text classification model using labeled email data.",
+    "stack": "Python, HuggingFace, Outlook API, FastAPI",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer"],
+    "timeline": "10",
+    "manager": "ram"
+  }

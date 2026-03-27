@@ -1,0 +1,16 @@
+{
+    "id": "poc_003",
+    "title": "Document RAG Search Assistant",
+    "description": "Conversational search over enterprise documents.",
+    "problem": "Employees struggle to find specific information across large docs.",
+    "outcome": "Chatbot that retrieves accurate answers using RAG.",
+    "language": "Python",
+    "approach": "Chunk documents, embed, store in vector DB, and build LLM retrieval.",
+    "stack": "Python, LangChain, Azure AI Search, Streamlit",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer", "Frontend"],
+    "timeline": "20",
+    "manager": "ram"
+  }

@@ -1,0 +1,16 @@
+{
+    "id": "poc_006",
+    "title": "Smart KPI Dashboard",
+    "description": "Real-time dashboard with AI‑based KPI insights.",
+    "problem": "Leaders lack unified real-time visibility into KPIs.",
+    "outcome": "Centralized dashboard with anomaly alerts.",
+    "language": "Python",
+    "approach": "ETL pipeline + dashboard UI + ML-based insights.",
+    "stack": "Python, PowerBI, Azure Data Factory, Flask",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Frontend", "Data Engineer"],
+    "timeline": "25",
+    "manager": "ram"
+  }

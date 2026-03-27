@@ -1,0 +1,16 @@
+{
+    "id": "poc_009",
+    "title": "Health Data Anomaly Detector",
+    "description": "Detect irregular patterns in wearable health data.",
+    "problem": "Sudden health anomalies often go unnoticed.",
+    "outcome": "Alerts for unusual heart rate, sleep, activity patterns.",
+    "language": "Python",
+    "approach": "Use time-series anomaly detection (LSTM Autoencoder).",
+    "stack": "Python, TensorFlow, Azure IoT Hub, Streamlit",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer"],
+    "timeline": "30",
+    "manager": "ram"
+  }

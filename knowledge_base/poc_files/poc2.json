@@ -1,0 +1,16 @@
+{
+    "id": "poc_002",
+    "title": "Voice-Based Meeting Minutes Generator",
+    "description": "Convert meeting audio into structured minutes automatically.",
+    "problem": "Manual minute writing is time-consuming and error‑prone.",
+    "outcome": "Accurate auto‑generated minutes with action items.",
+    "language": "Python",
+    "approach": "Transcribe audio using Whisper and run summarization using LLM.",
+    "stack": "Python, Whisper, Azure Storage, Streamlit",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer"],
+    "timeline": "10",
+    "manager": "ram"
+  }

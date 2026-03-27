@@ -1,0 +1,19 @@
+{
+  "employees": [
+    {
+      "id": "himanshu",
+      "password": "password123",
+      "name": "Himanshu More"
+    },
+    {
+      "id": "aditi",
+      "password": "password123",
+      "name": "Aditi Kothiyal"
+    },
+    {
+      "id": "tikam",
+      "password": "password123",
+      "name": "Tikam Singh"
+    }
+  ]
+}

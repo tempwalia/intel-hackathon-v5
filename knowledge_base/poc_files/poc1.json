@@ -1,0 +1,16 @@
+{
+    "id": "poc_001",
+    "title": "Intelligent Ticket Classifier",
+    "description": "AI‑powered system to auto‑classify IT support tickets.",
+    "problem": "Manual ticket triaging delays resolution and increases workload.",
+    "outcome": "Automated ticket classification with 85-95% accuracy.",
+    "language": "Python",
+    "approach": "Use NLP model (BERT) to classify tickets into predefined categories.",
+    "stack": "Python, FastAPI, HuggingFace, Azure Functions",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer", "Frontend"],
+    "timeline": "14",
+    "manager": "ram"
+  }

@@ -1,0 +1,19 @@
+{
+  "managers": [
+    {
+      "id": "ram123",
+      "password": "password123",
+      "name": "Ram Kumar"
+    },
+    {
+      "id": "shyaam123",
+      "password": "password123",
+      "name": "Shyaam Kumar"
+    },
+    {
+      "id": "admin",
+      "password": "admin123",
+      "name": "Admin"
+    }
+  ]
+}

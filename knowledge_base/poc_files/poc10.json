@@ -1,0 +1,16 @@
+{
+    "id": "poc_010",
+    "title": "Automated Compliance Checker",
+    "description": "Scan documents or code to check compliance with company policies.",
+    "problem": "Manual compliance checks are slow and error-prone.",
+    "outcome": "Instant compliance scoring and recommendations.",
+    "language": "Python",
+    "approach": "Embed policies + use vector search for compliance checking.",
+    "stack": "Python, LangChain, Elasticsearch, Gradio",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Frontend", "Data Engineer"],
+    "timeline": "28",
+    "manager": "ram"
+  }

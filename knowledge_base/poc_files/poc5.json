@@ -1,0 +1,16 @@
+{
+    "id": "poc_005",
+    "title": "Automated Resume Parser",
+    "description": "Extract candidate info from PDFs into structured form.",
+    "problem": "Recruiters manually extract resume data, causing delays.",
+    "outcome": "Structured JSON output for each resume with high accuracy.",
+    "language": "Python",
+    "approach": "Use NLP + regex + layout parsing to extract entities.",
+    "stack": "Python, Spacy, PDFPlumber, FastAPI",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Data Engineer"],
+    "timeline": "12",
+    "manager": "ram"
+  }

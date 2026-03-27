@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Check Exception Status</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			padding: 20px;
+		}
+		.container {
+			max-width: 800px;
+			margin: 0 auto;
+			background: white;
+			border-radius: 12px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			padding: 40px;
+		}
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 30px;
+			border-bottom: 2px solid #667eea;
+			padding-bottom: 20px;
+		}
+		h1 {
+			color: #333;
+			font-size: 28px;
+		}
+		.back-link {
+			color: #667eea;
+			text-decoration: none;
+			font-weight: 600;
+			padding: 8px 16px;
+			border: 2px solid #667eea;
+			border-radius: 6px;
+			transition: all 0.2s;
+		}
+		.back-link:hover {
+			background: #667eea;
+			color: white;
+		}
+		.search-section {
+			margin-bottom: 40px;
+		}
+		.form-group {
+			margin-bottom: 16px;
+		}
+		label {
+			display: block;
+			margin-bottom: 8px;
+			color: #333;
+			font-weight: 500;
+			font-size: 14px;
+		}
+		.input-group {
+			display: flex;
+			gap: 10px;
+		}
+		input[type="text"] {
+			flex: 1;
+			padding: 12px 16px;
+			border: 2px solid #ddd;
+			border-radius: 6px;
+			font-size: 14px;
+			transition: border-color 0.2s;
+		}
+		input[type="text"]:focus {
+			outline: none;
+			border-color: #667eea;
+			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		}
+		.search-btn {
+			padding: 12px 24px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border: none;
+			border-radius: 6px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform 0.2s;
+		}
+		.search-btn:hover {
+			transform: translateY(-2px);
+		}
+		.search-btn:active {
+			transform: translateY(0);
+		}
+		.results-section {
+			display: none;
+		}
+		.results-section.show {
+			display: block;
+		}
+		.status-card {
+			background: #f8f9fa;
+			border-left: 4px solid #667eea;
+			padding: 24px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+		}
+		.status-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+		.status-badge {
+			display: inline-block;
+			padding: 8px 16px;
+			border-radius: 20px;
+			font-weight: 600;
+			font-size: 14px;
+		}
+		.status-badge.pending {
+			background: #fff3cd;
+			color: #856404;
+		}
+		.status-badge.approved {
+			background: #d4edda;
+			color: #155724;
+		}
+		.detail-row {
+			margin-bottom: 16px;
+			display: grid;
+			grid-template-columns: 150px 1fr;
+			gap: 20px;
+		}
+		.detail-label {
+			font-weight: 600;
+			color: #667eea;
+			font-size: 14px;
+		}
+		.detail-value {
+			color: #333;
+			font-size: 14px;
+			word-break: break-word;
+		}
+		.similarity-bar {
+			width: 100%;
+			height: 30px;
+			background: #e9ecef;
+			border-radius: 6px;
+			overflow: hidden;
+			margin-top: 8px;
+		}
+		.similarity-fill {
+			height: 100%;
+			background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			font-weight: 600;
+			font-size: 12px;
+		}
+		.message {
+			padding: 16px;
+			border-radius: 6px;
+			margin-bottom: 20px;
+			font-weight: 500;
+		}
+		.message.success {
+			background: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+		}
+		.message.error {
+			background: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+		}
+		.message.info {
+			background: #d1ecf1;
+			color: #0c5460;
+			border: 1px solid #bee5eb;
+		}
+		.notes-section {
+			background: white;
+			border: 1px solid #e9ecef;
+			padding: 16px;
+			border-radius: 6px;
+			margin-top: 16px;
+		}
+		.notes-section h3 {
+			color: #667eea;
+			font-size: 14px;
+			margin-bottom: 12px;
+		}
+		.notes-text {
+			color: #333;
+			font-size: 14px;
+			line-height: 1.6;
+			font-style: italic;
+		}
+		@media (max-width: 600px) {
+			.header {
+				flex-direction: column;
+				gap: 15px;
+				text-align: center;
+			}
+			.input-group {
+				flex-direction: column;
+			}
+			.detail-row {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🔍 Check Exception Status</h1>
+			<a href="/employee" class="back-link">← Back to Form</a>
+		</div>
+		
+		<div class="search-section">
+			<div class="form-group">
+				<label for="exceptionId">Enter Exception ID</label>
+				<div class="input-group">
+					<input 
+						type="text" 
+						id="exceptionId" 
+						placeholder="e.g., a1b2c3d4"
+						autocomplete="off"
+					>
+					<button class="search-btn" onclick="searchException()">Search</button>
+				</div>
+				<p style="color: #666; font-size: 12px; margin-top: 8px;">
+					💡 You received the Exception ID when you submitted a request for a similar POC.
+				</p>
+			</div>
+		</div>
+		
+		<div id="messageContainer"></div>
+		
+		<div id="resultsSection" class="results-section">
+			<div class="status-card">
+				<div class="status-header">
+					<div>
+						<strong style="color: #333; font-size: 16px;">Exception Request Details</strong>
+					</div>
+					<div id="statusBadge" class="status-badge"></div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Exception ID</div>
+					<div class="detail-value" id="displayId">--</div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Status</div>
+					<div class="detail-value" id="displayStatus">--</div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Idea ID</div>
+					<div class="detail-value" id="displayIdeaId">--</div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Similar POC ID</div>
+					<div class="detail-value" id="displayPocId">--</div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Similarity</div>
+					<div>
+						<div class="detail-value" id="displaySimilarityPercent">--</div>
+						<div class="similarity-bar">
+							<div id="similarityFill" class="similarity-fill" style="width: 0%;">0%</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Manager</div>
+					<div class="detail-value" id="displayManager">--</div>
+				</div>
+				
+				<div class="detail-row">
+					<div class="detail-label">Submitted</div>
+					<div class="detail-value" id="displayCreatedAt">--</div>
+				</div>
+				
+				<div id="notesContainer" class="notes-section" style="display: none;">
+					<h3>📝 Your Notes</h3>
+					<div class="notes-text" id="displayNotes">--</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		// Search for exception status
+		async function searchException() {
+			const exceptionId = document.getElementById('exceptionId').value.trim();
+			const messageContainer = document.getElementById('messageContainer');
+			
+			if (!exceptionId) {
+				showMessage('⚠️ Please enter an Exception ID', 'error');
+				return;
+			}
+			
+			try {
+				const response = await fetch(`/api/get-exception-status?exception_id=${encodeURIComponent(exceptionId)}`);
+				const result = await response.json();
+				
+				if (response.ok && result.data) {
+					displayExceptionDetails(result.data);
+					showMessage('✅ Exception found successfully', 'success');
+				} else {
+					showMessage(result.message || '❌ Exception not found', 'error');
+					document.getElementById('resultsSection').classList.remove('show');
+				}
+			} catch (error) {
+				showMessage('❌ Error retrieving exception status. Please try again.', 'error');
+				console.error('Error:', error);
+			}
+		}
+		
+		// Display exception details
+		function displayExceptionDetails(data) {
+			const statusText = data.status === 'pending' ? '⏳ Pending Manager Review' : '✅ Approved';
+			const statusClass = data.status === 'pending' ? 'pending' : 'approved';
+			
+			document.getElementById('displayId').textContent = data.id || '--';
+			document.getElementById('displayStatus').textContent = statusText;
+			document.getElementById('statusBadge').textContent = statusText;
+			document.getElementById('statusBadge').className = `status-badge ${statusClass}`;
+			document.getElementById('displayIdeaId').textContent = data.idea_id || '--';
+			document.getElementById('displayPocId').textContent = data.similar_poc_id || '--';
+			
+			const similarity = data.similarity_percentage || (data.similarity_score * 100);
+			document.getElementById('displaySimilarityPercent').textContent = `${similarity.toFixed(1)}% Match`;
+			document.getElementById('similarityFill').style.width = `${similarity}%`;
+			document.getElementById('similarityFill').textContent = `${similarity.toFixed(1)}%`;
+			
+			document.getElementById('displayManager').textContent = data.manager || '--';
+			
+			const createdAt = new Date(data.created_at);
+			const formattedDate = createdAt.toLocaleString('en-US', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit'
+			});
+			document.getElementById('displayCreatedAt').textContent = formattedDate;
+			
+			if (data.notes) {
+				document.getElementById('displayNotes').textContent = data.notes;
+				document.getElementById('notesContainer').style.display = 'block';
+			} else {
+				document.getElementById('notesContainer').style.display = 'none';
+			}
+			
+			document.getElementById('resultsSection').classList.add('show');
+		}
+		
+		// Show message
+		function showMessage(text, type) {
+			const messageContainer = document.getElementById('messageContainer');
+			messageContainer.innerHTML = `<div class="message ${type}">${text}</div>`;
+		}
+		
+		// Allow Enter key to trigger search
+		document.getElementById('exceptionId').addEventListener('keypress', function(event) {
+			if (event.key === 'Enter') {
+				searchException();
+			}
+		});
+	</script>
+</body>
+</html>

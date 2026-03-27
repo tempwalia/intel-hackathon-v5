@@ -1,0 +1,16 @@
+{
+    "id": "poc_008",
+    "title": "AI Code Reviewer",
+    "description": "Automated review assistant that checks code for quality & security.",
+    "problem": "Manual code reviews are slow and inconsistent.",
+    "outcome": "Faster reviews with automated suggestions.",
+    "language": "Python",
+    "approach": "Use LLM to evaluate PR diff and suggest improvements.",
+    "stack": "Python, OpenAI API, GitHub Actions, LangChain",
+    "complexity": "Medium",
+    "boilerplate_enabled": false,
+    "dev_count": 1,
+    "skills": ["Frontend", "Data Engineer"],
+    "timeline": "22",
+    "manager": "ram"
+  }

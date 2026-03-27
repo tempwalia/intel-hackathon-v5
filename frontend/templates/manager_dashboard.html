@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Manager Dashboard - Exception Management</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			padding: 20px;
+		}
+
+		.container {
+			max-width: 1400px;
+			margin: 0 auto;
+		}
+
+		header {
+			background: white;
+			padding: 18px 30px;
+			border-radius: 12px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			margin-bottom: 20px;
+		}
+
+		h1 {
+			color: #333;
+			font-size: 24px;
+			margin-bottom: 3px;
+		}
+
+		.subtitle {
+			color: #666;
+			font-size: 13px;
+		}
+
+		.logout-btn {
+			background: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+			padding: 4px 8px;
+			border-radius: 4px;
+			font-weight: 600;
+			cursor: pointer;
+			font-size: 11px;
+			transition: all 0.2s;
+		}
+
+		.logout-btn:hover {
+			background: #f5c6cb;
+		}
+
+		.profile-section {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+		}
+
+		.profile-info {
+			text-align: right;
+		}
+
+		.manager-name {
+			color: #333;
+			font-weight: 600;
+			font-size: 14px;
+		}
+
+		.manager-badge {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			display: inline-block;
+			padding: 4px 10px;
+			border-radius: 20px;
+			font-size: 11px;
+			font-weight: 600;
+		}
+
+		.profile-avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 600;
+			font-size: 16px;
+		}
+
+		.main-content {
+			display: grid;
+			grid-template-columns: 1fr 520px;
+			gap: 20px;
+		}
+
+		.list-section {
+			background: white;
+			border-radius: 12px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			overflow: hidden;
+		}
+
+		.list-header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 12px 14px;
+			font-weight: 600;
+			font-size: 13px;
+		}
+
+		.list-content {
+			overflow-x: auto;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+		}
+
+		thead {
+			background: #f8f9fa;
+			border-bottom: 2px solid #e9ecef;
+		}
+
+		th {
+			padding: 8px 10px;
+			text-align: left;
+			font-weight: 600;
+			color: #495057;
+			font-size: 11px;
+			text-transform: uppercase;
+			letter-spacing: 0.2px;
+		}
+
+		tbody tr {
+			border-bottom: 1px solid #e9ecef;
+			transition: background-color 0.2s;
+		}
+
+		tbody tr:hover {
+			background-color: #f8f9fa;
+		}
+
+		td {
+			padding: 8px 10px;
+			color: #333;
+			font-size: 13px;
+		}
+
+		.exception-id {
+			color: #667eea;
+			font-weight: 600;
+			cursor: pointer;
+			text-decoration: none;
+			transition: color 0.2s;
+		}
+
+		.exception-id:hover {
+			color: #764ba2;
+			text-decoration: underline;
+		}
+
+		.status-badge {
+			display: inline-block;
+			padding: 5px 12px;
+			border-radius: 20px;
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: capitalize;
+		}
+
+		.status-pending {
+			background-color: #fff3cd;
+			color: #856404;
+		}
+
+		.status-appproved {
+			background-color: #d4edda;
+			color: #155724;
+		}
+
+		.status-approved {
+			background-color: #d4edda;
+			color: #155724;
+		}
+
+		.status-rejected {
+			background-color: #f8d7da;
+			color: #721c24;
+		}
+
+		.status-in-progress {
+			background-color: #d1ecf1;
+			color: #0c5460;
+		}
+
+		.empty-state {
+			padding: 60px 20px;
+			text-align: center;
+			color: #999;
+		}
+
+		.empty-state-icon {
+			font-size: 48px;
+			margin-bottom: 20px;
+		}
+
+		/* Detail Panel */
+		.detail-panel {
+			background: white;
+			border-radius: 12px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			height: calc(100vh - 240px);
+			max-height: calc(100vh - 240px);
+		}
+
+		.detail-header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 15px 20px;
+			font-weight: 600;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+			flex-shrink: 0;
+		}
+
+		.detail-body {
+			padding: 15px 20px;
+			flex: 1;
+			overflow-y: scroll;
+			min-height: 0;
+			max-height: 100%;
+		}
+
+		.detail-section {
+			margin-bottom: 15px;
+		}
+
+		.detail-section-title {
+			color: #667eea;
+			font-weight: 600;
+			font-size: 11px;
+			text-transform: uppercase;
+			margin-bottom: 8px;
+			letter-spacing: 0.5px;
+		}
+
+		.detail-field {
+			margin-bottom: 8px;
+		}
+
+		.detail-label {
+			color: #999;
+			font-size: 12px;
+			text-transform: uppercase;
+			margin-bottom: 4px;
+			font-weight: 600;
+		}
+
+		.detail-value {
+			color: #333;
+			font-size: 13px;
+			word-break: break-word;
+			line-height: 1.4;
+		}
+
+		.form-group {
+			margin-bottom: 12px;
+		}
+
+		label {
+			display: block;
+			color: #333;
+			font-weight: 600;
+			margin-bottom: 4px;
+			font-size: 12px;
+		}
+
+		select, textarea {
+			width: 100%;
+			padding: 8px 12px;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			font-family: inherit;
+			font-size: 14px;
+			color: #333;
+		}
+
+		select:focus, textarea:focus {
+			outline: none;
+			border-color: #667eea;
+			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		}
+
+		textarea {
+			resize: vertical;
+			min-height: 60px;
+		}
+
+		.button-group {
+			display: flex;
+			gap: 10px;
+			padding: 12px 20px 15px 20px;
+			background: white;
+			border-top: 2px solid #667eea;
+			flex-shrink: 0;
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		button {
+			flex: 1;
+			padding: 8px 14px;
+			border: none;
+			border-radius: 6px;
+			font-weight: 600;
+			cursor: pointer;
+			font-size: 13px;
+			transition: all 0.2s;
+			min-width: 0;
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+
+		.btn-primary:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+			opacity: 0.9;
+		}
+
+		.btn-secondary {
+			background: #e9ecef;
+			color: #333;
+		}
+
+		.btn-secondary:hover {
+			background: #dee2e6;
+		}
+
+		.poc-card {
+			display: block;
+			background: #f8f9fa;
+			border: 1px solid #e9ecef;
+			border-radius: 6px;
+			padding: 12px;
+		}
+
+		.toggle-btn {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border: none;
+			border-radius: 4px;
+			padding: 4px 8px;
+			font-size: 11px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.toggle-btn:hover {
+			opacity: 0.9;
+		}
+
+		.message {
+			padding: 12px 16px;
+			border-radius: 6px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		.message.success {
+			background: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+		}
+
+		.message.error {
+			background: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+		}
+
+		.loading {
+			text-align: center;
+			padding: 20px;
+			color: #999;
+		}
+
+		.spinner {
+			display: inline-block;
+			width: 20px;
+			height: 20px;
+			border: 3px solid #f3f3f3;
+			border-radius: 50%;
+			border-top: 3px solid #667eea;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		.close-btn {
+			background: none;
+			border: none;
+			color: white;
+			font-size: 24px;
+			cursor: pointer;
+			padding: 0;
+			width: 30px;
+			height: 30px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.detail-header-top {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.no-selection {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+			color: #999;
+			text-align: center;
+		}
+
+		#detailContent {
+			display: flex !important;
+			flex-direction: column;
+			height: 100%;
+		}
+
+		#detailContent.hidden {
+			display: none !important;
+		}
+
+		@media (max-width: 1024px) {
+			.main-content {
+				grid-template-columns: 1fr;
+			}
+
+			.detail-panel {
+				max-height: none;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<header>
+			<div style="display: flex; justify-content: space-between; align-items: center;">
+				<div>
+					<h1>📋 POC Management Dashboard</h1>
+					<p class="subtitle">View and manage all proof of concepts</p>
+				</div>
+				<div class="profile-section">
+					<div class="profile-avatar" id="profileAvatar">👤</div>
+					<div class="profile-info">
+						<div class="manager-name" id="managerName">Loading...</div>
+						<div class="manager-badge">Manager</div>
+					</div>
+					<button class="logout-btn" onclick="logoutManager()">Logout</button>
+				</div>
+			</div>
+		</header>
+
+		<div class="main-content">
+			<!-- List Section -->
+			<div class="list-section">
+				<div class="list-header">All Exceptions</div>
+				<div class="list-content">
+					<table id="exceptionsTable">
+						<thead>
+							<tr>
+								<th style="width: 20%;">ID</th>
+								<th style="width: 35%;">Title</th>
+								<th style="width: 20%;">Status</th>
+								<th style="width: 25%;">Manager</th>
+							</tr>
+						</thead>
+						<tbody id="exceptionsTableBody">
+							<tr>
+								<td colspan="4" class="empty-state">
+									<div class="spinner"></div>
+									<p>Loading exceptions...</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Detail Panel -->
+			<div class="detail-panel" id="detailPanel">
+				<div id="noSelection" class="no-selection">
+					<div>
+						<div style="font-size: 40px; margin-bottom: 10px;">👈</div>
+						<p>Click an exception ID to view details</p>
+					</div>
+				</div>
+
+				<div id="detailContent" class="hidden">
+					<div class="detail-header">
+						<div class="detail-header-top">
+							<span id="detailTitle">Exception Details</span>
+							<button class="close-btn" onclick="closeDetailPanel()">✕</button>
+						</div>
+					</div>
+
+					<div class="detail-body">
+						<div id="detailMessage"></div>
+
+						<!-- Exception Details (Minimal) -->
+						<div class="detail-section">
+							<div class="detail-section-title">Exception Information</div>
+							<div class="detail-field">
+								<div class="detail-label">Exception ID</div>
+								<div class="detail-value" id="exceptionId">-</div>
+							</div>
+							<div class="detail-field">
+								<div class="detail-label">Similar POC ID</div>
+								<div class="detail-value" id="exceptionSimilarPocId">-</div>
+							</div>
+							<div class="detail-field">
+								<div class="detail-label">Similarity Percentage</div>
+								<div class="detail-value" id="exceptionScore">-</div>
+							</div>
+							<div class="detail-field">
+								<div class="detail-label">Current Status</div>
+								<div class="detail-value" id="exceptionStatus">-</div>
+							</div>
+							<div class="detail-field">
+								<div class="detail-label">Created Date</div>
+								<div class="detail-value" id="exceptionCreatedAt">-</div>
+							</div>
+						</div>
+
+						<!-- Submitted Notes (Read-only) -->
+						<div class="detail-section">
+							<div class="detail-section-title">Submitted Notes</div>
+							<div class="detail-field">
+								<div class="detail-value" id="exceptionNotes" style="white-space: pre-wrap; background: #f8f9fa; padding: 8px; border-radius: 6px; min-height: 40px; font-size: 12px;">-</div>
+							</div>
+						</div>
+
+						<!-- Similar POC Section -->
+						<div class="detail-section" id="similarPocSection" style="display: none;">
+							<div class="detail-section-title">
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span>Similar POC Details</span>
+									<button class="toggle-btn" onclick="toggleSimilarPoc()">📖 View</button>
+								</div>
+							</div>
+							<div id="pocDetailsContent" style="display: none; margin-top: 10px;">
+								<div class="poc-card" id="pocCard">
+									<div class="detail-field">
+										<div class="detail-label">POC ID</div>
+										<div class="detail-value" id="pocId">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Title</div>
+										<div class="detail-value" id="pocTitle">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Description</div>
+										<div class="detail-value" id="pocDescription" style="white-space: pre-wrap; background: #f8f9fa; padding: 8px; border-radius: 6px;">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Problem</div>
+										<div class="detail-value" id="pocProblem" style="white-space: pre-wrap; background: #f8f9fa; padding: 8px; border-radius: 6px;">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Outcome</div>
+										<div class="detail-value" id="pocOutcome" style="white-space: pre-wrap; background: #f8f9fa; padding: 8px; border-radius: 6px;">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Language</div>
+										<div class="detail-value" id="pocLanguage">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Approach</div>
+										<div class="detail-value" id="pocApproach" style="white-space: pre-wrap; background: #f8f9fa; padding: 8px; border-radius: 6px;">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Tech Stack</div>
+										<div class="detail-value" id="pocStack">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Complexity</div>
+										<div class="detail-value" id="pocComplexity">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Timeline</div>
+										<div class="detail-value" id="pocTimeline">-</div>
+									</div>
+									<div class="detail-field">
+										<div class="detail-label">Required Skills</div>
+										<div class="detail-value" id="pocSkills">-</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Status Update -->
+						<div class="detail-section">
+							<div class="detail-section-title">Update Status</div>
+							<div class="form-group">
+								<label for="statusDropdown">Change Status to:</label>
+								<select id="statusDropdown">
+									<option value="pending">Pending</option>
+									<option value="in-progress">In Progress</option>
+									<option value="approved">Approved</option>
+									<option value="rejected">Rejected</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Manager Comments -->
+						<div class="detail-section">
+							<div class="detail-section-title">Manager Comments</div>
+							<div class="form-group">
+								<label for="managerCommentsTextarea">Add comments before changing status:</label>
+								<textarea id="managerCommentsTextarea" placeholder="Enter your comments here..."></textarea>
+							</div>
+						</div>
+					</div>
+
+					<!-- Action Buttons (Fixed) -->
+					<div class="button-group">
+						<button class="btn-primary" onclick="saveChanges()">💾 Save Changes</button>
+						<button class="btn-secondary" onclick="closeDetailPanel()">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		let currentExceptionId = null;
+		let exceptionsList = [];
+
+		// Load exceptions on page load
+		document.addEventListener('DOMContentLoaded', function() {
+			loadExceptions();
+			loadManagerProfile();
+		});
+
+		async function loadManagerProfile() {
+			try {
+				const response = await fetch('/api/manager-profile');
+				const result = await response.json();
+
+				if (result.success) {
+					const managerName = result.data.manager_name || 'Manager';
+					document.getElementById('managerName').textContent = managerName;
+					
+					// Update avatar with first letter
+					const firstLetter = managerName.charAt(0).toUpperCase();
+					document.getElementById('profileAvatar').textContent = firstLetter;
+				}
+			} catch (error) {
+				console.error('Error loading manager profile:', error);
+				document.getElementById('managerName').textContent = 'User';
+			}
+		}
+
+		async function logoutManager() {
+			if (!confirm('Are you sure you want to logout?')) return;
+
+			try {
+				const response = await fetch('/api/logout', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				});
+
+				if (response.ok) {
+					window.location.href = '/';
+				}
+			} catch (error) {
+				console.error('Error logging out:', error);
+				// Force redirect anyway
+				window.location.href = '/';
+			}
+		}
+
+		async function loadExceptions() {
+			try {
+				const response = await fetch('/api/exceptions');
+				const result = await response.json();
+
+				if (result.success) {
+					exceptionsList = result.data;
+					renderExceptionsTable();
+				} else {
+					showError('Failed to load exceptions');
+				}
+			} catch (error) {
+				console.error('Error loading exceptions:', error);
+				showError('Error loading exceptions: ' + error.message);
+			}
+		}
+
+		function renderExceptionsTable() {
+			const tbody = document.getElementById('exceptionsTableBody');
+
+			if (exceptionsList.length === 0) {
+				tbody.innerHTML = `
+					<tr>
+						<td colspan="4" class="empty-state">
+							<div class="empty-state-icon">📭</div>
+							<p>No exceptions found</p>
+						</td>
+					</tr>
+				`;
+				return;
+			}
+
+			tbody.innerHTML = exceptionsList.map(exception => `
+				<tr>
+					<td>
+						<a href="#" class="exception-id" onclick="loadExceptionDetail('${exception.id}'); return false;">
+							${exception.id.substring(0, 8)}...
+						</a>
+					</td>
+					<td>${exception.title || '-'}</td>
+					<td>
+						<span class="status-badge status-${exception.status || 'pending'}">
+							${exception.status || 'pending'}
+						</span>
+					</td>
+					<td>${exception.manager || '-'}</td>
+				</tr>
+			`).join('');
+		}
+
+		async function loadExceptionDetail(exceptionId) {
+			currentExceptionId = exceptionId;
+			const detailContent = document.getElementById('detailContent');
+			const noSelection = document.getElementById('noSelection');
+			const detailMessage = document.getElementById('detailMessage');
+
+			// Show loading state
+			detailMessage.innerHTML = '<div class="loading"><div class="spinner"></div> Loading...</div>';
+			detailContent.classList.remove('hidden');
+			noSelection.style.display = 'none';
+
+			try {
+				const response = await fetch(`/api/exception/${exceptionId}`);
+				const result = await response.json();
+
+				if (result.success) {
+					const exception = result.data.exception;
+					const similarPocs = result.data.similar_pocs;
+
+					// Populate exception fields
+					document.getElementById('detailTitle').textContent = 'Exception Details';
+					document.getElementById('exceptionId').textContent = exception.id || '-';
+					document.getElementById('exceptionSimilarPocId').textContent = exception.similar_poc_id || '-';
+					document.getElementById('exceptionScore').textContent = 
+						exception.similarity_score ? `${(exception.similarity_score * 100).toFixed(2)}%` : '-';
+					document.getElementById('exceptionStatus').textContent = exception.status || '-';
+					document.getElementById('exceptionCreatedAt').textContent = exception.created_at ? new Date(exception.created_at).toLocaleString() : '-';
+					document.getElementById('exceptionNotes').textContent = exception.notes || 'No notes provided';
+
+					// Populate form fields
+					document.getElementById('statusDropdown').value = exception.status || 'pending';
+					document.getElementById('managerCommentsTextarea').value = '';
+
+					// Populate similar POC details if available
+					if (similarPocs && similarPocs.length > 0) {
+						const similarPoc = similarPocs[0];
+						const pocData = similarPoc.poc_data || {};
+						
+						document.getElementById('similarPocSection').style.display = 'block';
+						document.getElementById('pocId').textContent = similarPoc.poc_id || '-';
+						document.getElementById('pocTitle').textContent = pocData.title || '-';
+						document.getElementById('pocDescription').textContent = pocData.description || '-';
+						document.getElementById('pocProblem').textContent = pocData.problem || '-';
+						document.getElementById('pocOutcome').textContent = pocData.outcome || '-';
+						document.getElementById('pocLanguage').textContent = pocData.language || '-';
+						document.getElementById('pocApproach').textContent = pocData.approach || '-';
+						document.getElementById('pocStack').textContent = pocData.stack || '-';
+						document.getElementById('pocComplexity').textContent = pocData.complexity || '-';
+						document.getElementById('pocTimeline').textContent = pocData.timeline || '-';
+						document.getElementById('pocSkills').textContent = Array.isArray(pocData.skills) ? pocData.skills.join(', ') : pocData.skills || '-';
+					} else {
+						document.getElementById('similarPocSection').style.display = 'none';
+					}
+
+					detailMessage.innerHTML = '';
+				} else {
+					showDetailMessage('Error: ' + result.message, 'error');
+				}
+			} catch (error) {
+				console.error('Error loading exception detail:', error);
+				showDetailMessage('Error loading exception: ' + error.message, 'error');
+			}
+		}
+
+		function toggleSimilarPoc() {
+			const pocDetailsContent = document.getElementById('pocDetailsContent');
+			if (pocDetailsContent.style.display === 'none') {
+				pocDetailsContent.style.display = 'block';
+			} else {
+				pocDetailsContent.style.display = 'none';
+			}
+		}
+
+		async function saveChanges() {
+			if (!currentExceptionId) return;
+
+			const status = document.getElementById('statusDropdown').value;
+			const managerComments = document.getElementById('managerCommentsTextarea').value;
+
+			if (!status) {
+				showDetailMessage('⚠️ Please select a status', 'error');
+				return;
+			}
+
+			try {
+				const response = await fetch(`/api/exception/${currentExceptionId}`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						status: status,
+						comments: managerComments
+					})
+				});
+
+				const result = await response.json();
+
+				if (result.success) {
+					showDetailMessage('✅ Status and comments saved successfully!', 'success');
+					
+					// Clear comments textarea after successful save
+					document.getElementById('managerCommentsTextarea').value = '';
+					
+					// Reload exceptions list to reflect changes
+					setTimeout(() => {
+						loadExceptions();
+					}, 1500);
+				} else {
+					showDetailMessage('❌ Error: ' + result.message, 'error');
+				}
+			} catch (error) {
+				console.error('Error saving changes:', error);
+				showDetailMessage('Error saving changes: ' + error.message, 'error');
+			}
+		}
+
+		function closeDetailPanel() {
+			document.getElementById('detailContent').classList.add('hidden');
+			document.getElementById('noSelection').style.display = 'flex';
+			currentExceptionId = null;
+		}
+
+		function showDetailMessage(message, type) {
+			const detailMessage = document.getElementById('detailMessage');
+			detailMessage.innerHTML = `<div class="message ${type}">${message}</div>`;
+			
+			// Auto-hide success messages after 3 seconds
+			if (type === 'success') {
+				setTimeout(() => {
+					detailMessage.innerHTML = '';
+				}, 3000);
+			}
+		}
+
+		function showError(message) {
+			const tbody = document.getElementById('exceptionsTableBody');
+			tbody.innerHTML = `
+				<tr>
+					<td colspan="4" class="empty-state">
+						<div style="color: #d32f2f; font-size: 14px;">⚠️ ${message}</div>
+					</td>
+				</tr>
+			`;
+		}
+	</script>
+</body>
+</html>

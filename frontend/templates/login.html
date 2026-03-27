@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>InnoScan - POC Management System</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.container {
+			width: 100%;
+			max-width: 1200px;
+			padding: 20px;
+		}
+
+		.login-section {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 40px;
+			align-items: center;
+		}
+
+		.welcome-section {
+			color: white;
+			text-align: center;
+		}
+
+		.welcome-section h1 {
+			font-size: 48px;
+			margin-bottom: 20px;
+		}
+
+		.welcome-section p {
+			font-size: 18px;
+			line-height: 1.6;
+			opacity: 0.9;
+			margin-bottom: 10px;
+		}
+
+		.login-box {
+			background: white;
+			border-radius: 16px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			padding: 40px;
+		}
+
+		.login-tabs {
+			display: flex;
+			gap: 0;
+			margin-bottom: 30px;
+			border-bottom: 2px solid #e9ecef;
+		}
+
+		.tab-button {
+			flex: 1;
+			padding: 15px 0;
+			border: none;
+			background: none;
+			font-size: 16px;
+			font-weight: 600;
+			color: #999;
+			cursor: pointer;
+			border-bottom: 3px solid transparent;
+			transition: all 0.3s;
+		}
+
+		.tab-button.active {
+			color: #667eea;
+			border-bottom-color: #667eea;
+		}
+
+		.tab-button:hover {
+			color: #667eea;
+		}
+
+		.tab-content {
+			display: none;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+
+		.form-group {
+			margin-bottom: 20px;
+		}
+
+		label {
+			display: block;
+			color: #333;
+			font-weight: 600;
+			margin-bottom: 8px;
+			font-size: 14px;
+		}
+
+		input {
+			width: 100%;
+			padding: 12px 16px;
+			border: 1px solid #ddd;
+			border-radius: 8px;
+			font-size: 14px;
+			font-family: inherit;
+			transition: all 0.3s;
+		}
+
+		input:focus {
+			outline: none;
+			border-color: #667eea;
+			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		}
+
+		.login-button {
+			width: 100%;
+			padding: 12px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border: none;
+			border-radius: 8px;
+			font-weight: 600;
+			font-size: 15px;
+			cursor: pointer;
+			transition: all 0.3s;
+			margin-top: 10px;
+		}
+
+		.login-button:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+		}
+
+		.login-button:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		.empty-state {
+			text-align: center;
+			padding: 40px 20px;
+			color: #999;
+		}
+
+		.empty-state-icon {
+			font-size: 48px;
+			margin-bottom: 15px;
+		}
+
+		.empty-state p {
+			font-size: 16px;
+		}
+
+		.message {
+			padding: 12px 16px;
+			border-radius: 8px;
+			margin-bottom: 15px;
+			font-size: 14px;
+		}
+
+		.message.error {
+			background: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+		}
+
+		.message.success {
+			background: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+		}
+
+		.loading {
+			display: inline-block;
+			width: 16px;
+			height: 16px;
+			border: 2px solid #f3f3f3;
+			border-radius: 50%;
+			border-top: 2px solid #667eea;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		@media (max-width: 768px) {
+			.login-section {
+				grid-template-columns: 1fr;
+				gap: 20px;
+			}
+
+			.welcome-section {
+				display: none;
+			}
+
+			.welcome-section h1 {
+				font-size: 32px;
+			}
+
+			.login-box {
+				max-width: 500px;
+				margin: 0 auto;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="login-section">
+			<div class="welcome-section">
+				<h1>🚀 InnoScan</h1>
+			<p>POC Management System</p>
+			<p style="font-size: 14px; margin-top: 30px; opacity: 0.8;">
+				Manage and track Proof of Concepts efficiently with our intelligent platform. 
+				Built for managers and developers to collaborate seamlessly.
+				</p>
+			</div>
+
+			<div class="login-box">
+				<div class="login-tabs">
+					<button class="tab-button active" onclick="switchTab('employee')">👤 Employee</button>
+					<button class="tab-button" onclick="switchTab('manager')">👔 Manager</button>
+				</div>
+
+				<!-- Employee Login Tab -->
+				<div id="employee-tab" class="tab-content active">
+					<div id="employeeMessage"></div>
+					<form onsubmit="handleEmployeeLogin(event)">
+						<div class="form-group">
+							<label for="employeeId">Employee ID</label>
+							<input type="text" id="employeeId" placeholder="Enter your employee ID" required>
+						</div>
+						<div class="form-group">
+							<label for="employeePassword">Password</label>
+							<input type="password" id="employeePassword" placeholder="Enter your password" required>
+						</div>
+						<button type="submit" class="login-button" id="employeeLoginButton">
+							Sign In
+						</button>
+					</form>
+				</div>
+
+				<!-- Manager Login Tab -->
+				<div id="manager-tab" class="tab-content">
+					<div id="managerMessage"></div>
+					<form onsubmit="handleManagerLogin(event)">
+						<div class="form-group">
+							<label for="managerId">Manager ID</label>
+							<input type="text" id="managerId" placeholder="Enter your manager ID" required>
+						</div>
+						<div class="form-group">
+							<label for="managerPassword">Password</label>
+							<input type="password" id="managerPassword" placeholder="Enter your password" required>
+						</div>
+						<button type="submit" class="login-button" id="loginButton">
+							Sign In
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function switchTab(tab) {
+			// Hide all tabs
+			document.getElementById('employee-tab').classList.remove('active');
+			document.getElementById('manager-tab').classList.remove('active');
+
+			// Remove active state from all buttons
+			document.querySelectorAll('.tab-button').forEach(btn => {
+				btn.classList.remove('active');
+			});
+
+			// Show selected tab
+			document.getElementById(tab + '-tab').classList.add('active');
+
+			// Mark button as active
+			event.target.classList.add('active');
+
+			// Clear messages
+			document.getElementById('employeeMessage').innerHTML = '';
+			document.getElementById('managerMessage').innerHTML = '';
+		}
+
+		async function handleEmployeeLogin(event) {
+			event.preventDefault();
+
+			const employeeId = document.getElementById('employeeId').value;
+			const password = document.getElementById('employeePassword').value;
+			const loginButton = document.getElementById('employeeLoginButton');
+			const messageDiv = document.getElementById('employeeMessage');
+
+			// Disable button and show loading
+			loginButton.disabled = true;
+			loginButton.innerHTML = '<span class="loading"></span> Signing in...';
+
+			try {
+				const response = await fetch('/api/employee-login', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						employee_id: employeeId,
+						password: password
+					})
+				});
+
+				const result = await response.json();
+
+				if (result.success) {
+					messageDiv.innerHTML = '<div class="message success">✅ Login successful! Redirecting...</div>';
+					// Redirect to employee dashboard after 1 second
+					setTimeout(() => {
+						window.location.href = '/employee';
+					}, 1000);
+				} else {
+					messageDiv.innerHTML = '<div class="message error">❌ ' + (result.message || 'Login failed. Please check your credentials.') + '</div>';
+					loginButton.disabled = false;
+					loginButton.innerHTML = 'Sign In';
+				}
+			} catch (error) {
+				console.error('Error:', error);
+				messageDiv.innerHTML = '<div class="message error">❌ Error: ' + error.message + '</div>';
+				loginButton.disabled = false;
+				loginButton.innerHTML = 'Sign In';
+			}
+		}
+
+		async function handleManagerLogin(event) {
+			event.preventDefault();
+
+			const managerId = document.getElementById('managerId').value;
+			const password = document.getElementById('managerPassword').value;
+			const loginButton = document.getElementById('loginButton');
+			const messageDiv = document.getElementById('managerMessage');
+
+			// Disable button and show loading
+			loginButton.disabled = true;
+			loginButton.innerHTML = '<span class="loading"></span> Signing in...';
+
+			try {
+				const response = await fetch('/api/manager-login', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						manager_id: managerId,
+						password: password
+					})
+				});
+
+				const result = await response.json();
+
+				if (result.success) {
+					messageDiv.innerHTML = '<div class="message success">✅ Login successful! Redirecting...</div>';
+					// Redirect to manager dashboard after 1 second
+					setTimeout(() => {
+						window.location.href = '/manager';
+					}, 1000);
+				} else {
+					messageDiv.innerHTML = '<div class="message error">❌ ' + (result.message || 'Login failed. Please check your credentials.') + '</div>';
+					loginButton.disabled = false;
+					loginButton.innerHTML = 'Sign In';
+				}
+			} catch (error) {
+				console.error('Error:', error);
+				messageDiv.innerHTML = '<div class="message error">❌ Error: ' + error.message + '</div>';
+				loginButton.disabled = false;
+				loginButton.innerHTML = 'Sign In';
+			}
+		}
+	</script>
+</body>
+</html>
