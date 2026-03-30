@@ -1,8 +1,12 @@
 import os
 import json
-import requests
 from pathlib import Path
 from dotenv import load_dotenv
+
+try:
+    from qwen_setup import get_qwen_pipe
+except ImportError:
+    from frontend.qwen_setup import get_qwen_pipe
 
 load_dotenv()
 
@@ -12,12 +16,8 @@ DEFAULT_POC_PATH = PROJECT_ROOT / "knowledge_base" / "poc_files" / "poc1.json"
 # ==============================
 # CONFIG (EDIT THIS)
 # ==============================
-QWEN_API_URL = os.getenv("QWEN_API_URL", "http://<YOUR_JUMP_SERVER_ENDPOINT>/generate")
-API_KEY = os.getenv("QWEN_API_KEY") or None
-
 TEMPERATURE = float(os.getenv("QWEN_TEMPERATURE", "0.2"))
 MAX_TOKENS = int(os.getenv("QWEN_MAX_TOKENS", "2000"))
-REQUEST_TIMEOUT = int(os.getenv("QWEN_TIMEOUT", "60"))
 
 # ==============================
 # BRD SCHEMA (STRICT CONTRACT)
@@ -65,7 +65,8 @@ BRD_SCHEMA = {
 # PROMPT BUILDER
 # ==============================
 def build_prompt(poc_json: dict) -> str:
-    return f"""
+    print("[build_prompt] Building BRD prompt...")
+    prompt = f"""
 You are a software architect and business analyst AI.
 
 Your job is to convert the input POC JSON into a STRICT, STRUCTURED, MACHINE-READABLE BRD.
@@ -106,53 +107,55 @@ BRD SCHEMA:
 INPUT POC JSON:
 {json.dumps(poc_json, indent=2)}
 """
+    print(f"[build_prompt] Prompt ready (chars={len(prompt)})")
+    return prompt
 
 
 # ==============================
-# CALL QWEN API
+# CALL QWEN (LOCAL PIPELINE)
 # ==============================
 def call_qwen(prompt: str) -> str:
-    if not QWEN_API_URL or "<YOUR_JUMP_SERVER_ENDPOINT>" in QWEN_API_URL:
-        raise ValueError("QWEN_API_URL is not configured. Set it in your environment or .env file.")
+    print("[call_qwen] Loading Qwen pipeline...")
+    pipe = get_qwen_pipe()
+    print("[call_qwen] Generating response...")
 
-    headers = {"Content-Type": "application/json"}
-    if API_KEY:
-        headers["Authorization"] = f"Bearer {API_KEY}"
-
-    payload = {
-        "prompt": prompt,
-        "temperature": TEMPERATURE,
-        "max_tokens": MAX_TOKENS
+    generation_kwargs = {
+        "max_new_tokens": MAX_TOKENS,
     }
 
-    try:
-        response = requests.post(
-            QWEN_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=REQUEST_TIMEOUT,
-        )
-    except requests.RequestException as e:
-        raise Exception(f"Qwen API request failed: {e}") from e
+    if TEMPERATURE > 0:
+        generation_kwargs["do_sample"] = True
+        generation_kwargs["temperature"] = TEMPERATURE
+    else:
+        generation_kwargs["do_sample"] = False
 
-    if response.status_code != 200:
-        raise Exception(f"Qwen API error: {response.text}")
+    output = pipe(prompt, **generation_kwargs)
+    print("[call_qwen] Generation complete")
 
-    try:
-        body = response.json()
-    except ValueError:
-        return response.text
+    if isinstance(output, list) and output:
+        first = output[0]
+        if isinstance(first, dict):
+            generated_text = first.get("generated_text")
+            if generated_text is not None:
+                # HF text-generation often returns prompt + completion.
+                # Remove prompt prefix so downstream JSON extraction
+                # does not accidentally parse schema from the prompt.
+                if generated_text.startswith(prompt):
+                    generated_text = generated_text[len(prompt):].strip()
+                print(f"[call_qwen] Output length={len(generated_text)}")
+                return generated_text
+        print(f"[call_qwen] Output length={len(str(first))}")
+        return str(first)
 
-    if isinstance(body, dict):
-        return body.get("text") or body.get("response") or body.get("output") or json.dumps(body)
-
-    return str(body)
+    print(f"[call_qwen] Output length={len(str(output))}")
+    return str(output)
 
 
 # ==============================
 # EXTRACT JSON FROM RESPONSE
 # ==============================
 def extract_json(text: str) -> dict:
+    print("[extract_json] Attempting to parse model output...")
     text = text.strip()
 
     if text.startswith("```"):
@@ -161,15 +164,54 @@ def extract_json(text: str) -> dict:
             text = "\n".join(lines[1:-1]).strip()
 
     try:
-        return json.loads(text)
+        parsed = json.loads(text)
+        print("[extract_json] Parsed full response as JSON")
+        return parsed
     except json.JSONDecodeError:
         pass
+
+    # Parse one top-level JSON object at a time, ignoring extra text.
+    # Prefer BRD objects with more functional requirements.
+    decoder = json.JSONDecoder()
+    idx = 0
+    first_dict_obj = None
+    best_brd_obj = None
+    best_brd_fr_count = -1
+
+    while idx < len(text):
+        start = text.find("{", idx)
+        if start == -1:
+            break
+
+        try:
+            obj, end = decoder.raw_decode(text[start:])
+            if isinstance(obj, dict) and "brd" in obj and isinstance(obj.get("brd"), dict):
+                frs = obj["brd"].get("functional_requirements", [])
+                fr_count = len(frs) if isinstance(frs, list) else 0
+                if fr_count > best_brd_fr_count:
+                    best_brd_obj = obj
+                    best_brd_fr_count = fr_count
+            if isinstance(obj, dict) and first_dict_obj is None:
+                first_dict_obj = obj
+            idx = start + end
+        except json.JSONDecodeError:
+            idx = start + 1
+
+    if isinstance(best_brd_obj, dict):
+        print(f"[extract_json] Selected BRD JSON candidate (functional_requirements={best_brd_fr_count})")
+        return best_brd_obj
+
+    if isinstance(first_dict_obj, dict):
+        print("[extract_json] Returning first valid JSON object found in output")
+        return first_dict_obj
 
     try:
         start = text.index("{")
         end = text.rindex("}") + 1
         json_str = text[start:end]
-        return json.loads(json_str)
+        parsed = json.loads(json_str)
+        print("[extract_json] Parsed JSON using first/last brace fallback")
+        return parsed
     except Exception as e:
         raise ValueError(f"Failed to extract JSON: {e}")
 
@@ -178,6 +220,7 @@ def extract_json(text: str) -> dict:
 # VALIDATION
 # ==============================
 def get_validation_error(brd: dict) -> str | None:
+    print("[get_validation_error] Validating BRD structure...")
     if not isinstance(brd, dict):
         return "Output must be a JSON object"
 
@@ -239,6 +282,7 @@ def get_validation_error(brd: dict) -> str | None:
 
 
 def validate_brd(brd: dict) -> bool:
+    print("[validate_brd] Running BRD validation...")
     error = get_validation_error(brd)
     if error:
         print(f"Validation failed: {error}")
@@ -250,25 +294,43 @@ def validate_brd(brd: dict) -> bool:
 # MAIN FUNCTION
 # ==============================
 def resolve_poc_path(poc_path: str | Path) -> Path:
+    print(f"[resolve_poc_path] Resolving POC path: {poc_path}")
     poc_path = Path(poc_path)
 
     if poc_path.exists():
+        print(f"[resolve_poc_path] Using direct path: {poc_path}")
         return poc_path
 
     repo_relative_path = PROJECT_ROOT / poc_path
     if repo_relative_path.exists():
+        print(f"[resolve_poc_path] Using repo-relative path: {repo_relative_path}")
         return repo_relative_path
 
     raise FileNotFoundError(f"POC file not found: {poc_path}")
 
 
-def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD"):
-    poc_path = resolve_poc_path(poc_path)
-    output_dir = Path(output_dir)
+def load_single_poc_json(poc_path: str | Path) -> dict:
+    print("[load_single_poc_json] Loading one input JSON file...")
+    resolved_path = resolve_poc_path(poc_path)
 
-    # Load POC
-    with open(poc_path, "r", encoding="utf-8") as f:
-        poc_json = json.load(f)
+    if resolved_path.suffix.lower() != ".json":
+        raise ValueError(f"Input file must be a .json file: {resolved_path}")
+
+    with open(resolved_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if not isinstance(data, dict):
+        raise ValueError("Input JSON must contain one JSON object")
+
+    print(f"[load_single_poc_json] Loaded JSON file: {resolved_path}")
+    return data
+
+
+def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD"):
+    print("[generate_brd_from_poc] Starting BRD generation...")
+    poc_json = load_single_poc_json(poc_path)
+    output_dir = Path(output_dir)
+    print(f"[generate_brd_from_poc] Loaded one POC JSON object")
 
     # Build prompt
     prompt = build_prompt(poc_json)
@@ -282,7 +344,8 @@ def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD"):
     # Validate
     validation_error = get_validation_error(brd_json)
     if validation_error:
-        print("Retrying with fix prompt...")
+        print(f"[generate_brd_from_poc] Validation failed: {validation_error}")
+        print("[generate_brd_from_poc] Retrying with fix prompt...")
 
         fix_prompt = f"""
 Fix the following JSON to strictly match the schema.
@@ -310,6 +373,7 @@ BROKEN JSON:
 
     # Create output folder
     output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[generate_brd_from_poc] Output directory ready: {output_dir}")
 
     # Save file
     poc_id = poc_json.get("id", "unknown")
