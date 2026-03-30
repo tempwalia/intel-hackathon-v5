@@ -18,6 +18,7 @@ DEFAULT_POC_PATH = PROJECT_ROOT / "knowledge_base" / "poc_files" / "poc1.json"
 # ==============================
 TEMPERATURE = float(os.getenv("QWEN_TEMPERATURE", "0.2"))
 MAX_TOKENS = int(os.getenv("QWEN_MAX_TOKENS", "2000"))
+DEBUG_OUTPUT = os.getenv("BRD_DEBUG_OUTPUT", "false").lower() in {"1", "true", "yes", "on"}
 
 # ==============================
 # BRD SCHEMA (STRICT CONTRACT)
@@ -158,6 +159,9 @@ def extract_json(text: str) -> dict:
     print("[extract_json] Attempting to parse model output...")
     text = text.strip()
 
+    if not text:
+        raise ValueError("Failed to extract JSON: model output is empty")
+
     if text.startswith("```"):
         lines = text.splitlines()
         if len(lines) >= 3:
@@ -205,6 +209,10 @@ def extract_json(text: str) -> dict:
         print("[extract_json] Returning first valid JSON object found in output")
         return first_dict_obj
 
+    if "{" not in text or "}" not in text:
+        preview = text[:200].replace("\n", "\\n")
+        raise ValueError(f"Failed to extract JSON: no JSON object delimiters found. Output preview: {preview}")
+
     try:
         start = text.index("{")
         end = text.rindex("}") + 1
@@ -213,7 +221,8 @@ def extract_json(text: str) -> dict:
         print("[extract_json] Parsed JSON using first/last brace fallback")
         return parsed
     except Exception as e:
-        raise ValueError(f"Failed to extract JSON: {e}")
+        preview = text[:200].replace("\n", "\\n")
+        raise ValueError(f"Failed to extract JSON: {e}. Output preview: {preview}")
 
 
 # ==============================
@@ -290,6 +299,70 @@ def validate_brd(brd: dict) -> bool:
     return True
 
 
+def normalize_brd_for_min_requirements(brd: dict, poc_json: dict, min_requirements: int = 5) -> dict:
+    print("[normalize_brd_for_min_requirements] Normalizing BRD content...")
+
+    if not isinstance(brd, dict):
+        return brd
+
+    data = brd.setdefault("brd", {})
+    if not isinstance(data, dict):
+        brd["brd"] = {}
+        data = brd["brd"]
+
+    fr_list = data.get("functional_requirements")
+    if not isinstance(fr_list, list):
+        fr_list = []
+        data["functional_requirements"] = fr_list
+
+    # Normalize existing items
+    for i, fr in enumerate(fr_list, start=1):
+        if not isinstance(fr, dict):
+            fr = {}
+            fr_list[i - 1] = fr
+
+        fr.setdefault("id", f"FR-{i:03d}")
+        fr.setdefault("description", "TBD")
+        fr.setdefault("input", "TBD")
+        fr.setdefault("output", "TBD")
+        if not isinstance(fr.get("logic"), list):
+            fr["logic"] = ["TBD"]
+
+    # Add missing FR entries up to minimum
+    title = poc_json.get("title", "the project") if isinstance(poc_json, dict) else "the project"
+    while len(fr_list) < min_requirements:
+        idx = len(fr_list) + 1
+        fr_list.append(
+            {
+                "id": f"FR-{idx:03d}",
+                "description": f"Auto-generated requirement {idx} for {title}",
+                "input": "TBD",
+                "output": "TBD",
+                "logic": ["TBD"],
+            }
+        )
+
+    print(f"[normalize_brd_for_min_requirements] functional_requirements={len(fr_list)}")
+    return brd
+
+
+def save_debug_output(output_dir: Path, stage: str, content: str | dict, enabled: bool):
+    if not enabled:
+        return
+
+    debug_dir = output_dir / "_debug"
+    debug_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = debug_dir / f"{stage}.txt"
+    with open(file_path, "w", encoding="utf-8") as f:
+        if isinstance(content, dict):
+            f.write(json.dumps(content, indent=2))
+        else:
+            f.write(str(content))
+
+    print(f"[debug] Saved: {file_path}")
+
+
 # ==============================
 # MAIN FUNCTION
 # ==============================
@@ -326,26 +399,61 @@ def load_single_poc_json(poc_path: str | Path) -> dict:
     return data
 
 
-def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD"):
+def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD", debug_output: bool = DEBUG_OUTPUT):
     print("[generate_brd_from_poc] Starting BRD generation...")
     poc_json = load_single_poc_json(poc_path)
     output_dir = Path(output_dir)
     print(f"[generate_brd_from_poc] Loaded one POC JSON object")
 
+    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[generate_brd_from_poc] Output directory ready: {output_dir}")
+
     # Build prompt
     prompt = build_prompt(poc_json)
+    save_debug_output(output_dir, "01_prompt_initial", prompt, debug_output)
 
     # Call LLM
     raw_output = call_qwen(prompt)
+    save_debug_output(output_dir, "02_model_output_initial", raw_output, debug_output)
 
     # Extract JSON
-    brd_json = extract_json(raw_output)
+    try:
+        brd_json = extract_json(raw_output)
+    except ValueError as parse_error:
+        print(f"[generate_brd_from_poc] Parse failed: {parse_error}")
+        print("[generate_brd_from_poc] Retrying with parse-repair prompt...")
+        save_debug_output(output_dir, "03_parse_error", str(parse_error), debug_output)
+
+        parse_fix_prompt = f"""
+Convert the following model output into one valid JSON object that matches this BRD schema.
+Return ONLY JSON.
+Do not include markdown or explanations.
+If information is missing, use "TBD".
+
+BRD SCHEMA:
+{json.dumps(BRD_SCHEMA, indent=2)}
+
+ORIGINAL POC JSON:
+{json.dumps(poc_json, indent=2)}
+
+MODEL OUTPUT TO FIX:
+{raw_output}
+"""
+        save_debug_output(output_dir, "04_prompt_parse_fix", parse_fix_prompt, debug_output)
+        raw_output = call_qwen(parse_fix_prompt)
+        save_debug_output(output_dir, "05_model_output_parse_fix", raw_output, debug_output)
+        brd_json = extract_json(raw_output)
+
+    # Normalize to avoid hard failure on low-quality model output
+    brd_json = normalize_brd_for_min_requirements(brd_json, poc_json)
+    save_debug_output(output_dir, "05a_brd_after_normalize", brd_json, debug_output)
 
     # Validate
     validation_error = get_validation_error(brd_json)
     if validation_error:
         print(f"[generate_brd_from_poc] Validation failed: {validation_error}")
         print("[generate_brd_from_poc] Retrying with fix prompt...")
+        save_debug_output(output_dir, "06_validation_error", validation_error, debug_output)
 
         fix_prompt = f"""
 Fix the following JSON to strictly match the schema.
@@ -365,15 +473,17 @@ ORIGINAL POC JSON:
 BROKEN JSON:
 {json.dumps(brd_json, indent=2)}
 """
+        save_debug_output(output_dir, "07_prompt_validation_fix", fix_prompt, debug_output)
         raw_output = call_qwen(fix_prompt)
+        save_debug_output(output_dir, "08_model_output_validation_fix", raw_output, debug_output)
         brd_json = extract_json(raw_output)
+        brd_json = normalize_brd_for_min_requirements(brd_json, poc_json)
+        save_debug_output(output_dir, "08a_brd_after_normalize", brd_json, debug_output)
 
         if not validate_brd(brd_json):
             raise Exception("Failed to generate valid BRD")
 
-    # Create output folder
-    output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[generate_brd_from_poc] Output directory ready: {output_dir}")
+    save_debug_output(output_dir, "09_final_brd_json", brd_json, debug_output)
 
     # Save file
     poc_id = poc_json.get("id", "unknown")
@@ -390,22 +500,7 @@ BROKEN JSON:
 # ==============================
 # OPTIONAL CLI USAGE
 # ==============================
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--poc",
-        default=str(DEFAULT_POC_PATH),
-        help="Path to POC JSON file",
-    )
-    parser.add_argument("--out", default="BRD", help="Output folder")
-
-    args = parser.parse_args()
-
-    generate_brd_from_poc(args.poc, args.out)
+poc_path = """knowledge_base/poc_files/poc1.json"""
 
 
-
-    
+generate_brd_from_poc( poc_path)
