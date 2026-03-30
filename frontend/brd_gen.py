@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_POC_PATH = PROJECT_ROOT / "knowledge_base" / "poc_files" / "poc1.json"
+
 # ==============================
 # CONFIG (EDIT THIS)
 # ==============================
@@ -246,12 +249,22 @@ def validate_brd(brd: dict) -> bool:
 # ==============================
 # MAIN FUNCTION
 # ==============================
-def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD"):
+def resolve_poc_path(poc_path: str | Path) -> Path:
     poc_path = Path(poc_path)
-    output_dir = Path(output_dir)
 
-    if not poc_path.exists():
-        raise FileNotFoundError(f"POC file not found: {poc_path}")
+    if poc_path.exists():
+        return poc_path
+
+    repo_relative_path = PROJECT_ROOT / poc_path
+    if repo_relative_path.exists():
+        return repo_relative_path
+
+    raise FileNotFoundError(f"POC file not found: {poc_path}")
+
+
+def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD"):
+    poc_path = resolve_poc_path(poc_path)
+    output_dir = Path(output_dir)
 
     # Load POC
     with open(poc_path, "r", encoding="utf-8") as f:
@@ -318,9 +331,17 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--poc", required=True, help="Path to POC JSON file")
+    parser.add_argument(
+        "--poc",
+        default=str(DEFAULT_POC_PATH),
+        help="Path to POC JSON file",
+    )
     parser.add_argument("--out", default="BRD", help="Output folder")
 
     args = parser.parse_args()
 
     generate_brd_from_poc(args.poc, args.out)
+
+
+
+    
