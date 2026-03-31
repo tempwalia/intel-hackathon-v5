@@ -1,0 +1,16 @@
+{
+  "id": "poc_XXX",
+  "title": "<Project title>",
+  "description": "<High-level description of the project>",
+  "problem": "<Problem statement the project solves>",
+  "outcome": "<Expected outcome or results>",
+  "language": "<Primary programming language, e.g. Python>",
+  "approach": "<Technical approach or methodology>",
+  "stack": "<Comma-separated tech stack, e.g. Python, FastAPI, Redis>",
+  "complexity": "<Low | Medium | High>",
+  "boilerplate_enabled": false,
+  "dev_count": 1,
+  "skills": ["<Skill 1>", "<Skill 2>"],
+  "timeline": "<Number of days as string, e.g. 14>",
+  "manager": "<Manager name>"
+}
