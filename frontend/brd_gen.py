@@ -1,5 +1,7 @@
 import os
 import json
+import argparse
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -11,6 +13,7 @@ except ImportError:
 load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+TEMPLATES_DIR = PROJECT_ROOT / "templates"
 DEFAULT_POC_PATH = PROJECT_ROOT / "knowledge_base" / "poc_files" / "poc1.json"
 
 # ==============================
@@ -18,7 +21,20 @@ DEFAULT_POC_PATH = PROJECT_ROOT / "knowledge_base" / "poc_files" / "poc1.json"
 # ==============================
 TEMPERATURE = float(os.getenv("QWEN_TEMPERATURE", "0.2"))
 MAX_TOKENS = int(os.getenv("QWEN_MAX_TOKENS", "2000"))
+MAX_TOKENS_MD = int(os.getenv("QWEN_MAX_TOKENS_MD", "4000"))
 DEBUG_OUTPUT = os.getenv("BRD_DEBUG_OUTPUT", "false").lower() in {"1", "true", "yes", "on"}
+MARKDOWN_ONLY = os.getenv("BRD_MARKDOWN_ONLY", "false").lower() in {"1", "true", "yes", "on"}
+
+
+# ==============================
+# TEMPLATE LOADER
+# ==============================
+def load_template(filename: str) -> str:
+    """Load a template file from the templates/ directory."""
+    path = TEMPLATES_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"Template not found: {path}")
+    return path.read_text(encoding="utf-8")
 
 # ==============================
 # BRD SCHEMA (STRICT CONTRACT)
@@ -115,13 +131,13 @@ INPUT POC JSON:
 # ==============================
 # CALL QWEN (LOCAL PIPELINE)
 # ==============================
-def call_qwen(prompt: str) -> str:
+def call_qwen(prompt: str, max_tokens: int | None = None) -> str:
     print("[call_qwen] Loading Qwen pipeline...")
     pipe = get_qwen_pipe()
     print("[call_qwen] Generating response...")
 
     generation_kwargs = {
-        "max_new_tokens": MAX_TOKENS,
+        "max_new_tokens": max_tokens if max_tokens is not None else MAX_TOKENS,
     }
 
     if TEMPERATURE > 0:
@@ -364,6 +380,214 @@ def save_debug_output(output_dir: Path, stage: str, content: str | dict, enabled
 
 
 # ==============================
+# MARKDOWN BRD PROMPT BUILDER
+# ==============================
+def build_markdown_prompt(poc_json: dict) -> str:
+    print("[build_markdown_prompt] Building markdown BRD prompt...")
+    brd_template = load_template("brd_template.md")
+
+    # Extract key data
+    title = poc_json.get("title", "Project")
+    problem = poc_json.get("problem", "")
+    approach = poc_json.get("approach", "")
+    stack = poc_json.get("stack", "")
+    outcome = poc_json.get("outcome", "")
+    timeline = poc_json.get("timeline", "")
+    skills = poc_json.get("skills", [])
+
+    prompt = f"""Generate a Business Requirements Document (BRD) in Markdown format.
+
+INSTRUCTIONS:
+1. Fill the template below with ONLY the POC data provided
+2. Output ONLY the Markdown - nothing else
+3. Keep it concise - 2-3 lines per section maximum
+4. Do NOT write emails, signatures, or explanations
+
+EXAMPLE OUTPUT FORMAT:
+# Business Requirements Document
+
+## 1. Project Overview
+
+**Title:** AI-powered ticket classifier
+
+**Problem Statement:** Manual ticket processing is slow
+
+**Proposed Solution:** Use ML to auto-classify support tickets
+
+**Expected Outcome:** 85% accuracy, 10x faster processing
+
+## 2. Tech Stack & Architecture
+
+**Language:** Python
+
+**Technology Stack:** FastAPI, Transformers, scikit-learn
+
+**System Design:** REST API with ML model backend
+
+---
+
+POC DATA TO USE:
+- Title: {title}
+- Problem: {problem}
+- Approach: {approach}
+- Tech Stack: {stack}
+- Timeline: {timeline} days
+- Skills: {', '.join(skills) if skills else 'N/A'}
+- Outcome: {outcome}
+
+TEMPLATE:
+{brd_template}
+
+NOW GENERATE THE BRD:
+"""
+    print(f"[build_markdown_prompt] Prompt ready (chars={len(prompt)})")
+    return prompt
+
+
+# ==============================
+# MARKDOWN EXTRACTION
+# ==============================
+def extract_markdown(text: str, prompt: str = "") -> str:
+    """Clean up LLM output to get markdown content."""
+    print("[extract_markdown] Extracting markdown from model output...")
+
+    # Strip prompt echo if present
+    if prompt and text.startswith(prompt):
+        text = text[len(prompt):]
+
+    text = text.strip()
+
+    # Remove wrapping code fences (```markdown ... ``` or ``` ... ```)
+    if text.startswith("```"):
+        lines = text.splitlines()
+        # Remove first line (```markdown or ```)
+        if lines:
+            lines = lines[1:]
+        # Remove last line if it's closing ```
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+
+    if not text:
+        raise ValueError("Failed to extract markdown: model output is empty after cleanup")
+
+    print(f"[extract_markdown] Extracted markdown (chars={len(text)})")
+    return text
+
+
+# ==============================
+# MARKDOWN BRD VALIDATION
+# ==============================
+REQUIRED_MD_SECTIONS = [
+    r"#+\s*Project\s+Overview",
+    r"#+\s*Tech\s+Stack",
+    r"#+\s*(?:File|Folder)\s+.*Structure",
+    r"#+\s*Functional\s+Requirements",
+    r"#+\s*Data\s+Model",
+    r"#+\s*Implementation\s+(?:Steps|Phases)",
+    r"#+\s*Setup\s+.*(?:Dependency|Dependencies|Instructions)",
+]
+
+
+def validate_markdown_brd(text: str) -> str | None:
+    """Check that all required section headings are present.
+    Returns error string or None if valid."""
+    print("[validate_markdown_brd] Validating markdown BRD structure...")
+
+    for pattern in REQUIRED_MD_SECTIONS:
+        if not re.search(pattern, text, re.IGNORECASE):
+            return f"Missing required section matching: {pattern}"
+
+    # Check for at least 5 FR entries (FR-001 style)
+    fr_ids = re.findall(r"FR-\d{3}", text)
+    unique_frs = set(fr_ids)
+    if len(unique_frs) < 5:
+        return f"Found only {len(unique_frs)} unique functional requirements (need at least 5)"
+
+    return None
+
+
+# ==============================
+# MARKDOWN BRD GENERATION
+# ==============================
+def generate_markdown_brd(
+    poc_json: dict,
+    output_dir: Path,
+    debug_output: bool = False,
+    max_tokens_md: int = MAX_TOKENS_MD,
+) -> str:
+    """Generate a markdown BRD from POC JSON. Returns the output file path."""
+    print("[generate_markdown_brd] Starting markdown BRD generation...")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build prompt
+    prompt = build_markdown_prompt(poc_json)
+    save_debug_output(output_dir, "md_01_prompt", prompt, debug_output)
+
+    # Call LLM
+    raw_output = call_qwen(prompt, max_tokens=max_tokens_md)
+    save_debug_output(output_dir, "md_02_model_output", raw_output, debug_output)
+
+    # Extract markdown
+    try:
+        md_content = extract_markdown(raw_output, prompt)
+    except ValueError as e:
+        print(f"[generate_markdown_brd] Extraction failed: {e}")
+        save_debug_output(output_dir, "md_03_extract_error", str(e), debug_output)
+        raise
+
+    save_debug_output(output_dir, "md_03_extracted", md_content, debug_output)
+
+    # Validate
+    validation_error = validate_markdown_brd(md_content)
+    if validation_error:
+        print(f"[generate_markdown_brd] Validation failed: {validation_error}")
+        print("[generate_markdown_brd] Retrying with fix prompt...")
+        save_debug_output(output_dir, "md_04_validation_error", validation_error, debug_output)
+
+        brd_template = load_template("brd_template.md")
+        fix_prompt = f"""The following markdown BRD is incomplete or missing required sections.
+Fix it to include ALL required sections from the template.
+Output ONLY the corrected markdown, nothing else.
+
+VALIDATION ERROR:
+{validation_error}
+
+BRD TEMPLATE (required structure):
+{brd_template}
+
+INPUT POC JSON:
+{json.dumps(poc_json, indent=2)}
+
+INCOMPLETE MARKDOWN BRD TO FIX:
+{md_content}
+"""
+        save_debug_output(output_dir, "md_05_fix_prompt", fix_prompt, debug_output)
+        raw_output = call_qwen(fix_prompt, max_tokens=max_tokens_md)
+        save_debug_output(output_dir, "md_06_fix_output", raw_output, debug_output)
+
+        md_content = extract_markdown(raw_output, fix_prompt)
+
+        retry_error = validate_markdown_brd(md_content)
+        if retry_error:
+            print(f"[generate_markdown_brd] Retry validation still failed: {retry_error}")
+            print("[generate_markdown_brd] Saving best-effort markdown anyway...")
+
+    save_debug_output(output_dir, "md_07_final", md_content, debug_output)
+
+    # Save file
+    poc_id = poc_json.get("id", "unknown")
+    output_path = output_dir / f"brd_{poc_id}.md"
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(md_content)
+
+    print(f"✅ Markdown BRD saved at: {output_path}")
+    return str(output_path)
+
+
+# ==============================
 # MAIN FUNCTION
 # ==============================
 def resolve_poc_path(poc_path: str | Path) -> Path:
@@ -399,7 +623,13 @@ def load_single_poc_json(poc_path: str | Path) -> dict:
     return data
 
 
-def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD", debug_output: bool = DEBUG_OUTPUT):
+def generate_brd_from_poc(
+    poc_path: str,
+    output_dir: str = "BRD",
+    debug_output: bool = DEBUG_OUTPUT,
+    markdown_only: bool = MARKDOWN_ONLY,
+    max_tokens_md: int = MAX_TOKENS_MD,
+):
     print("[generate_brd_from_poc] Starting BRD generation...")
     poc_json = load_single_poc_json(poc_path)
     output_dir = Path(output_dir)
@@ -407,6 +637,30 @@ def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD", debug_output: 
 
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"[generate_brd_from_poc] Output directory ready: {output_dir}")
+
+    results = {}
+
+    # ---- Step 1: Generate Markdown BRD (primary) ----
+    print("[generate_brd_from_poc] Generating markdown BRD...")
+    md_path = generate_markdown_brd(
+        poc_json, output_dir, debug_output=debug_output, max_tokens_md=max_tokens_md
+    )
+    results["markdown"] = md_path
+
+    # ---- Step 2: Generate JSON BRD (secondary, unless --markdown-only) ----
+    if not markdown_only:
+        print("[generate_brd_from_poc] Generating JSON BRD...")
+        json_path = _generate_json_brd(poc_json, output_dir, debug_output)
+        results["json"] = json_path
+    else:
+        print("[generate_brd_from_poc] Skipping JSON BRD (--markdown-only)")
+
+    print("[generate_brd_from_poc] Done.")
+    return results
+
+
+def _generate_json_brd(poc_json: dict, output_dir: Path, debug_output: bool) -> str:
+    """Generate a JSON BRD (the original flow). Returns the output file path."""
 
     # Build prompt
     prompt = build_prompt(poc_json)
@@ -420,8 +674,8 @@ def generate_brd_from_poc(poc_path: str, output_dir: str = "BRD", debug_output: 
     try:
         brd_json = extract_json(raw_output)
     except ValueError as parse_error:
-        print(f"[generate_brd_from_poc] Parse failed: {parse_error}")
-        print("[generate_brd_from_poc] Retrying with parse-repair prompt...")
+        print(f"[_generate_json_brd] Parse failed: {parse_error}")
+        print("[_generate_json_brd] Retrying with parse-repair prompt...")
         save_debug_output(output_dir, "03_parse_error", str(parse_error), debug_output)
 
         parse_fix_prompt = f"""
@@ -451,8 +705,8 @@ MODEL OUTPUT TO FIX:
     # Validate
     validation_error = get_validation_error(brd_json)
     if validation_error:
-        print(f"[generate_brd_from_poc] Validation failed: {validation_error}")
-        print("[generate_brd_from_poc] Retrying with fix prompt...")
+        print(f"[_generate_json_brd] Validation failed: {validation_error}")
+        print("[_generate_json_brd] Retrying with fix prompt...")
         save_debug_output(output_dir, "06_validation_error", validation_error, debug_output)
 
         fix_prompt = f"""
@@ -492,15 +746,54 @@ BROKEN JSON:
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(brd_json, f, indent=2)
 
-    print(f"✅ BRD saved at: {output_path}")
-
+    print(f"✅ JSON BRD saved at: {output_path}")
     return str(output_path)
 
 
 # ==============================
-# OPTIONAL CLI USAGE
+# CLI
 # ==============================
-poc_path = """knowledge_base/poc_files/poc1.json"""
+def main():
+    parser = argparse.ArgumentParser(description="Generate BRD from POC JSON")
+    parser.add_argument(
+        "--poc",
+        default="knowledge_base/poc_files/poc1.json",
+        help="Path to POC JSON file (default: knowledge_base/poc_files/poc1.json)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="BRD",
+        help="Output directory (default: BRD)",
+    )
+    parser.add_argument(
+        "--debug-output",
+        action="store_true",
+        default=DEBUG_OUTPUT,
+        help="Save debug artifacts to _debug/ folder",
+    )
+    parser.add_argument(
+        "--markdown-only",
+        action="store_true",
+        default=MARKDOWN_ONLY,
+        help="Generate only markdown BRD, skip JSON",
+    )
+    parser.add_argument(
+        "--max-tokens-md",
+        type=int,
+        default=MAX_TOKENS_MD,
+        help=f"Max tokens for markdown generation (default: {MAX_TOKENS_MD})",
+    )
+
+    args = parser.parse_args()
+
+    generate_brd_from_poc(
+        poc_path=args.poc,
+        output_dir=args.output_dir,
+        debug_output=args.debug_output,
+        markdown_only=args.markdown_only,
+        max_tokens_md=args.max_tokens_md,
+    )
 
 
-generate_brd_from_poc( poc_path)
+if __name__ == "__main__":
+    main()
