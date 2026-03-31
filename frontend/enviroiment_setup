@@ -1,0 +1,13 @@
+# Qwen local model configuration
+QWEN_MODEL=microsoft/phi-2
+QWEN_TEMPERATURE=0.2
+QWEN_MAX_TOKENS=2000
+QWEN_MAX_TOKENS_MD=1200
+
+# Qwen API endpoint (optional, uncomment to use remote API)
+# QWEN_API_URL=http://your-api-endpoint.com
+
+# BRD generation options
+BRD_DEBUG_OUTPUT=false
+BRD_MARKDOWN_ONLY=true
+
